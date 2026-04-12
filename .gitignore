@@ -1,0 +1,31 @@
+# Виртуальное окружение
+venv/
+.venv/
+env/
+
+# База данных
+instance/
+*.db
+
+# Загруженные и сгенерированные файлы
+/tmp/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.eggs/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Переменные окружения
+.env
+.env.*

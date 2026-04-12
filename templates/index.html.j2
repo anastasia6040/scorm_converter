@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            line-height: 1.7;
+            color: #333;
+        }
+        h1 { font-size: 2em; margin-top: 1em; }
+        h2 { font-size: 1.5em; margin-top: 1em; }
+        h3 { font-size: 1.2em; margin-top: 1em; }
+        img { max-width: 100%; height: auto; margin: 1em 0; display: block; }
+        table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+        td, th { border: 1px solid #ccc; padding: 8px 12px; }
+        th { background: #f0f0f0; }
+        p { margin: 0.8em 0; }
+    </style>
+</head>
+<body>
+
+{% for element in elements %}
+
+    {% if element.type.value == "heading" %}
+        <h{{ element.level }}>{{ element.text }}</h{{ element.level }}>
+
+    {% elif element.type.value == "paragraph" %}
+        <p>
+            {% if element.bold %}<strong>{% endif %}
+            {% if element.italic %}<em>{% endif %}
+            {{ element.text }}
+            {% if element.italic %}</em>{% endif %}
+            {% if element.bold %}</strong>{% endif %}
+        </p>
+
+    {% elif element.type.value == "image" %}
+        <img src="images/{{ element.filename }}" alt="Изображение">
+
+    {% elif element.type.value == "table" %}
+        <table>
+            {% for row in element.rows %}
+            <tr>
+                {% for cell in row.cells %}
+                <td>{{ cell.text }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+
+    {% endif %}
+
+{% endfor %}
+
+</body>
+</html>
