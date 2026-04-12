@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>История конвертаций</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        h1 { margin-bottom: 24px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid #eee; }
+        th { background: #f5f5f5; font-weight: 600; }
+        .success { color: #16a34a; }
+        .error   { color: #dc2626; }
+        a { color: #4f46e5; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>История конвертаций</h1>
+    <a href="/">← Назад</a>
+
+    <br><br>
+
+    {% if conversions %}
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Имя файла</th>
+                <th>Заголовок документа</th>
+                <th>Статус</th>
+                <th>Дата</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for c in conversions %}
+            <tr>
+                <td>{{ c.id }}</td>
+                <td>{{ c.original_filename }}</td>
+                <td>{{ c.document_title or "—" }}</td>
+                <td class="{{ c.status }}">{{ c.status }}</td>
+                <td>{{ c.created_at.strftime("%d.%m.%Y %H:%M") }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>Конвертаций пока не было.</p>
+    {% endif %}
+</body>
+</html>
