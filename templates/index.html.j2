@@ -13,49 +13,109 @@
             line-height: 1.7;
             color: #333;
         }
-        h1 { font-size: 2em; margin-top: 1em; }
+        h1 { font-size: 2em; margin-top: 1.2em; }
         h2 { font-size: 1.5em; margin-top: 1em; }
         h3 { font-size: 1.2em; margin-top: 1em; }
+        p  { margin: 0.8em 0; }
         img { max-width: 100%; height: auto; margin: 1em 0; display: block; }
+        .caption { text-align: center; color: #666; font-size: 0.9em; margin-top: -0.5em; }
         table { border-collapse: collapse; width: 100%; margin: 1em 0; }
         td, th { border: 1px solid #ccc; padding: 8px 12px; }
         th { background: #f0f0f0; }
-        p { margin: 0.8em 0; }
+        ul, ol { margin: 0.5em 0 0.5em 1.5em; padding: 0; }
+        li { margin: 0.3em 0; }
+        .code-block {
+            font-family: monospace;
+            font-size: 0.9em;
+            background: #f8f8f8;
+            border-left: 3px solid #ccc;
+            padding: 2px 8px;
+            margin: 2px 0;
+        }
     </style>
 </head>
 <body>
 
+{# Макрос для рендеринга одного run-кусочка #}
+{% macro render_run(run) %}
+  {%- set text = run.text | e -%}
+  {%- if run.highlight %}<mark style="background:{{ run.highlight }}">{% endif -%}
+  {%- if run.link %}<a href="{{ run.link | e }}" target="_blank">{% endif -%}
+  {%- if run.color %}<span style="color:#{{ run.color }}">{% endif -%}
+  {%- if run.bold %}<strong>{% endif -%}
+  {%- if run.italic %}<em>{% endif -%}
+  {%- if run.underline and not run.link %}<u>{% endif -%}
+  {{- text -}}
+  {%- if run.underline and not run.link %}</u>{% endif -%}
+  {%- if run.italic %}</em>{% endif -%}
+  {%- if run.bold %}</strong>{% endif -%}
+  {%- if run.color %}</span>{% endif -%}
+  {%- if run.link %}</a>{% endif -%}
+  {%- if run.highlight %}</mark>{% endif -%}
+{% endmacro %}
+
+{# Группируем соседние ListItem в <ul>/<ol> #}
+{% set ns = namespace(in_ul=false, in_ol=false) %}
+
 {% for element in elements %}
 
-    {% if element.type.value == "heading" %}
-        <h{{ element.level }}>{{ element.text }}</h{{ element.level }}>
+  {# Закрываем список если элемент не ListItem #}
+  {% if element.type.value != "list_item" %}
+    {% if ns.in_ul %}</ul>{% set ns.in_ul = false %}{% endif %}
+    {% if ns.in_ol %}</ol>{% set ns.in_ol = false %}{% endif %}
+  {% endif %}
 
-    {% elif element.type.value == "paragraph" %}
-        <p>
-            {% if element.bold %}<strong>{% endif %}
-            {% if element.italic %}<em>{% endif %}
-            {{ element.text }}
-            {% if element.italic %}</em>{% endif %}
-            {% if element.bold %}</strong>{% endif %}
-        </p>
+  {% if element.type.value == "heading" %}
+    <h{{ element.level }}>{{ element.text | e }}</h{{ element.level }}>
 
-    {% elif element.type.value == "image" %}
-        <img src="images/{{ element.filename }}" alt="Изображение">
+  {% elif element.type.value == "paragraph" %}
+    {% set align = element.alignment.value if element.alignment else "left" %}
+    {% if element.background %}
+      <p class="code-block" style="text-align:{{ align }}">
+    {% else %}
+      <p style="text-align:{{ align }}">
+    {% endif %}
+      {% for run in element.runs %}{{ render_run(run) }}{% endfor %}
+    </p>
 
-    {% elif element.type.value == "table" %}
-        <table>
-            {% for row in element.rows %}
-            <tr>
-                {% for cell in row.cells %}
-                <td>{{ cell.text }}</td>
-                {% endfor %}
-            </tr>
-            {% endfor %}
-        </table>
+  {% elif element.type.value == "list_item" %}
+    {% if element.ordered %}
+      {% if not ns.in_ol %}
+        {% if ns.in_ul %}</ul>{% set ns.in_ul = false %}{% endif %}
+        <ol>{% set ns.in_ol = true %}
+      {% endif %}
+    {% else %}
+      {% if not ns.in_ul %}
+        {% if ns.in_ol %}</ol>{% set ns.in_ol = false %}{% endif %}
+        <ul>{% set ns.in_ul = true %}
+      {% endif %}
+    {% endif %}
+    <li>{% for run in element.runs %}{{ render_run(run) }}{% endfor %}</li>
 
+  {% elif element.type.value == "image" %}
+    <img src="images/{{ element.filename }}" alt="Изображение">
+    {% if element.caption %}
+      <p class="caption">{{ element.caption | e }}</p>
     {% endif %}
 
+  {% elif element.type.value == "table" %}
+    <table>
+      {% for row in element.rows %}
+      <tr>
+        {% for cell in row.cells %}
+        <td>{{ cell.text | e }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+
+  {% endif %}
+
 {% endfor %}
+
+{# Закрываем список если документ заканчивается списком #}
+{% if ns.in_ul %}</ul>{% endif %}
+{% if ns.in_ol %}</ol>{% endif %}
 
 </body>
 </html>
