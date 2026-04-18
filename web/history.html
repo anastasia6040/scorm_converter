@@ -4,48 +4,73 @@
     <meta charset="UTF-8">
     <title>История конвертаций</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }
+        nav {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 0 32px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .nav-logo { font-weight: bold; color: #4f46e5; font-size: 1.1em; }
+        .nav-right { display: flex; align-items: center; gap: 16px; font-size: 0.9em; }
+        .nav-user { color: #555; }
+        .nav-right a { color: #4f46e5; text-decoration: none; }
+        .nav-right a:hover { text-decoration: underline; }
+        .content { max-width: 900px; margin: 40px auto; padding: 0 20px; }
         h1 { margin-bottom: 24px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid #eee; }
-        th { background: #f5f5f5; font-weight: 600; }
+        table { width: 100%; border-collapse: collapse; background: white;
+                border-radius: 8px; overflow: hidden;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+        th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid #eee; }
+        th { background: #f9f9f9; font-weight: 600; color: #444; }
         .success { color: #16a34a; }
         .error   { color: #dc2626; }
-        a { color: #4f46e5; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        .empty { color: #999; margin-top: 24px; }
     </style>
 </head>
 <body>
-    <h1>История конвертаций</h1>
-    <a href="/">← Назад</a>
+    <nav>
+        <span class="nav-logo">SCORM Конвертер</span>
+        <div class="nav-right">
+            <span class="nav-user">{{ current_user.username }}</span>
+            <a href="/">Конвертировать</a>
+            <a href="/logout">Выйти</a>
+        </div>
+    </nav>
 
-    <br><br>
+    <div class="content">
+        <h1>История конвертаций</h1>
 
-    {% if conversions %}
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Имя файла</th>
-                <th>Заголовок документа</th>
-                <th>Статус</th>
-                <th>Дата</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for c in conversions %}
-            <tr>
-                <td>{{ c.id }}</td>
-                <td>{{ c.original_filename }}</td>
-                <td>{{ c.document_title or "—" }}</td>
-                <td class="{{ c.status }}">{{ c.status }}</td>
-                <td>{{ c.created_at.strftime("%d.%m.%Y %H:%M") }}</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-        <p>Конвертаций пока не было.</p>
-    {% endif %}
+        {% if conversions %}
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Имя файла</th>
+                    <th>Заголовок документа</th>
+                    <th>Статус</th>
+                    <th>Дата</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for c in conversions %}
+                <tr>
+                    <td>{{ c.id }}</td>
+                    <td>{{ c.original_filename }}</td>
+                    <td>{{ c.document_title or "—" }}</td>
+                    <td class="{{ c.status }}">{{ c.status }}</td>
+                    <td>{{ c.created_at.strftime("%d.%m.%Y %H:%M") }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p class="empty">Конвертаций пока не было.</p>
+        {% endif %}
+    </div>
 </body>
 </html>
