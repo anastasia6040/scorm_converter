@@ -119,7 +119,8 @@ def finalize():
             version=version,
             keywords=keywords,
         )
-        pack_scorm(html, manifest, images, output_path)
+        XSD_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "xsd")
+        pack_scorm(html, manifest, images, output_path, xsd_dir=XSD_DIR)
 
         # Сохраняем конвертацию в БД
         conversion = Conversion(
