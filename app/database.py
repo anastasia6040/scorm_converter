@@ -37,3 +37,21 @@ class Conversion(db.Model):
 
     def __repr__(self):
         return f"<Conversion {self.original_filename} [{self.status}]>"
+    
+class CourseMetadata(db.Model):
+    __tablename__ = "course_metadata"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    conversion_id = db.Column(db.Integer, db.ForeignKey("conversions.id"), nullable=False)
+
+    title = db.Column(db.String(255), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    author = db.Column(db.String(255), nullable=True)
+    organization = db.Column(db.String(255), nullable=True)
+    language = db.Column(db.String(10), default="ru")
+    version = db.Column(db.String(20), default="1.0")
+    keywords = db.Column(db.String(500), nullable=True)
+
+    user = db.relationship("User", backref="metadata_entries")
+    conversion = db.relationship("Conversion", backref="metadata", uselist=False)

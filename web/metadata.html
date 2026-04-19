@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Метаданные курса</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }
+        nav {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 0 32px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .nav-logo { font-weight: bold; color: #4f46e5; font-size: 1.1em; }
+        .nav-right { display: flex; align-items: center; gap: 16px; font-size: 0.9em; }
+        .nav-right a { color: #4f46e5; text-decoration: none; }
+        .page { display: flex; justify-content: center; padding: 40px 20px; }
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 520px;
+        }
+        h1 { font-size: 1.4em; margin-bottom: 4px; }
+        .subtitle { color: #888; font-size: 0.9em; margin-bottom: 28px; }
+        label { display: block; font-size: 0.9em; color: #555; margin-bottom: 4px; }
+        .optional { color: #aaa; font-size: 0.8em; margin-left: 4px; }
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 18px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95em;
+            font-family: Arial, sans-serif;
+        }
+        textarea { resize: vertical; min-height: 80px; }
+        .row { display: flex; gap: 16px; }
+        .row > div { flex: 1; }
+        .actions { display: flex; gap: 12px; margin-top: 8px; }
+        .btn-primary {
+            flex: 1;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        .btn-primary:hover { background: #4338ca; }
+        .btn-secondary {
+            flex: 1;
+            background: white;
+            color: #4f46e5;
+            border: 2px solid #4f46e5;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        .btn-secondary:hover { background: #f5f4ff; }
+    </style>
+</head>
+<body>
+    <nav>
+        <span class="nav-logo">SCORM Конвертер</span>
+        <div class="nav-right">
+            <a href="/">← Назад</a>
+            <a href="/logout">Выйти</a>
+        </div>
+    </nav>
+
+    <div class="page">
+        <div class="card">
+            <h1>Метаданные курса</h1>
+            <p class="subtitle">Все поля необязательны — можно пропустить и скачать сразу</p>
+
+            <form action="/finalize" method="POST">
+                <label>Название курса <span class="optional">необязательно</span></label>
+                <input type="text" name="title" placeholder="{{ suggested_title }}">
+
+                <label>Описание <span class="optional">необязательно</span></label>
+                <textarea name="description" placeholder="Краткое описание содержания курса"></textarea>
+
+                <label>Автор <span class="optional">необязательно</span></label>
+                <input type="text" name="author" placeholder="Иванов Иван Иванович">
+
+                <label>Организация <span class="optional">необязательно</span></label>
+                <input type="text" name="organization" placeholder="ДВФУ">
+
+                <label>Ключевые слова <span class="optional">необязательно, через запятую</span></label>
+                <input type="text" name="keywords" placeholder="программирование, React, TypeScript">
+
+                <div class="row">
+                    <div>
+                        <label>Язык</label>
+                        <select name="language">
+                            <option value="ru" selected>Русский (ru)</option>
+                            <option value="en">English (en)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Версия</label>
+                        <input type="text" name="version" placeholder="1.0" value="1.0">
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" name="skip" value="1"
+                            class="btn-secondary">Пропустить</button>
+                    <button type="submit" class="btn-primary">Сохранить и скачать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

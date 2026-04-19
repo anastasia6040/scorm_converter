@@ -3,6 +3,7 @@
           version="1.2"
           xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
           xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2"
+          xmlns:lom="http://ltsc.ieee.org/xsd/LOM"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://www.imsproject.org/xsd/imscp_rootv1p1p2
                               imscp_rootv1p1p2.xsd
@@ -12,6 +13,50 @@
     <metadata>
         <schema>ADL SCORM</schema>
         <schemaversion>1.2</schemaversion>
+        <lom:lom>
+            <lom:general>
+                <lom:title>
+                    <lom:string language="{{ language }}">{{ title }}</lom:string>
+                </lom:title>
+                {% if description %}
+                <lom:description>
+                    <lom:string language="{{ language }}">{{ description }}</lom:string>
+                </lom:description>
+                {% endif %}
+                <lom:language>{{ language }}</lom:language>
+                {% if keywords %}
+                <lom:keyword>
+                    <lom:string language="{{ language }}">{{ keywords }}</lom:string>
+                </lom:keyword>
+                {% endif %}
+            </lom:general>
+            {% if author or version %}
+            <lom:lifecycle>
+                {% if author %}
+                <lom:contribute>
+                    <lom:role>
+                        <lom:source><lom:string>LOMv1.0</lom:string></lom:source>
+                        <lom:value><lom:string>Author</lom:string></lom:value>
+                    </lom:role>
+                    <lom:entity>{{ author }}</lom:entity>
+                </lom:contribute>
+                {% endif %}
+                {% if version %}
+                <lom:version>
+                    <lom:string>{{ version }}</lom:string>
+                </lom:version>
+                {% endif %}
+            </lom:lifecycle>
+            {% endif %}
+            {% if organization %}
+            <lom:rights>
+                <lom:description>
+                    <lom:string>{{ organization }}</lom:string>
+                </lom:string>
+                </lom:description>
+            </lom:rights>
+            {% endif %}
+        </lom:lom>
     </metadata>
 
     <organizations default="org1">
