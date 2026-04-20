@@ -15,6 +15,8 @@ bp = Blueprint("main", __name__)
 UPLOAD_FOLDER = "/tmp/scorm_uploads"
 OUTPUT_FOLDER = "/tmp/scorm_output"
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
+XSD_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "xsd")
+JS_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "js")
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
@@ -119,8 +121,7 @@ def finalize():
             version=version,
             keywords=keywords,
         )
-        XSD_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "xsd")
-        pack_scorm(html, manifest, images, output_path, xsd_dir=XSD_DIR)
+        pack_scorm(html, manifest, images, output_path, xsd_dir=XSD_DIR, js_dir=JS_DIR)
 
         # Сохраняем конвертацию в БД
         conversion = Conversion(

@@ -33,6 +33,8 @@
             margin: 2px 0;
         }
     </style>
+    <script src="js/scorm_12_libs.js"></script>
+    <script src="js/SCORM_API_wrapper.js"></script>
 </head>
 <body>
 
@@ -117,5 +119,18 @@
 {% if ns.in_ul %}</ul>{% endif %}
 {% if ns.in_ol %}</ol>{% endif %}
 
+  <script>
+        window.onload = function() {
+            var result = SCORM_12.LMSInitialize("");
+            if (result === "true") {
+                SCORM_12.LMSSetValue("cmi.core.lesson_status", "passed");
+                SCORM_12.LMSCommit("");
+            }
+        };
+
+        window.onunload = function() {
+            SCORM_12.LMSFinish("");
+        };
+    </script>
 </body>
 </html>
