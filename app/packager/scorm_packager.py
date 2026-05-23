@@ -32,3 +32,5 @@ def pack_scorm(
                 if os.path.exists(js_path):
                     with open(js_path, "rb") as f:
                         zf.writestr(f"js/{js_file}", f.read())
+                        
+                        

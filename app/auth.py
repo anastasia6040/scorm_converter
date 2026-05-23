@@ -44,13 +44,13 @@ def register():
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip()
         password = request.form.get("password", "")
 
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter_by(email=email).first()
 
         if not user or not check_password_hash(user.password_hash, password):
-            flash("Неверное имя пользователя или пароль")
+            flash("Неверный email или пароль")
             return render_template("login.html")
 
         login_user(user)
