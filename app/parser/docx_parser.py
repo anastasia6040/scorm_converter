@@ -2,12 +2,12 @@ from docx import Document
 from docx.oxml.ns import qn
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.table import Table as DocxTable
-#from docx.text.paragraph import Paragraph as DocxParagraph
+# from docx.text.paragraph import Paragraph as DocxParagraph
 
 from .models import (
     ParsedDocument, Heading, Paragraph, ListItem,
     ImageBlock, Table, TableRow, TableCell,
-    RunSegment, Alignment, ElementType
+    RunSegment, Alignment, ElementType, Section
 )
 
 ALIGNMENT_MAP = {
@@ -85,7 +85,8 @@ def _parse_single_run(run_el, link: str | None) -> RunSegment | None:
     if rpr is not None:
         color_el = rpr.find(qn("w:color"))
         if color_el is not None:
-            val = color_el.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val")
+            val = color_el.get(
+                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val")
             if val and val.lower() != "auto":
                 color = val
 
@@ -93,13 +94,15 @@ def _parse_single_run(run_el, link: str | None) -> RunSegment | None:
     if rpr is not None:
         hl_el = rpr.find(qn("w:highlight"))
         if hl_el is not None:
-            name = hl_el.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val", "").upper()
+            name = hl_el.get(
+                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val", "").upper()
             highlight_css = HIGHLIGHT_COLOR_MAP.get(name)
 
     underline = (
         rpr is not None and
         rpr.find(qn("w:u")) is not None and
-        rpr.find(qn("w:u")).get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val", "") not in ("none", "")
+        rpr.find(qn("w:u")).get(
+            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val", "") not in ("none", "")
     )
 
     return RunSegment(
@@ -231,5 +234,24 @@ def parse_docx(file_path: str) -> ParsedDocument:
 
     if not result.title:
         result.title = "Без названия"
+
+    # Группируем элементы по разделам (по H1)
+    sections = []
+    current_section = None
+
+    for element in result.elements:
+        if isinstance(element, Heading) and element.level == 1:
+            current_section = Section(title=element.text)
+            sections.append(current_section)
+        elif current_section is None:
+            # Элементы до первого H1 — создаём раздел без названия
+            current_section = Section(title=result.title)
+            sections.append(current_section)
+            current_section.elements.append(element)
+        else:
+            current_section.elements.append(element)
+
+    result.sections = sections if sections else [
+        Section(title=result.title, elements=result.elements)]
 
     return result

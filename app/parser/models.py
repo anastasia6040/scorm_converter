@@ -87,7 +87,15 @@ DocumentElement = Heading | Paragraph | ListItem | ImageBlock | Table
 
 
 @dataclass
+class Section:
+    """Раздел документа — начинается с H1 и содержит все элементы до следующего H1."""
+    title: str = ""
+    elements: list[DocumentElement] = field(default_factory=list)
+
+
+@dataclass
 class ParsedDocument:
     title: str = ""
+    sections: list[Section] = field(default_factory=list)
     elements: list[DocumentElement] = field(default_factory=list)
     images: dict[str, bytes] = field(default_factory=dict)
