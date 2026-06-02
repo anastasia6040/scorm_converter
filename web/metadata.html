@@ -113,10 +113,23 @@
                 </div>
 
                 <div class="actions">
-                    <button type="submit" name="skip" value="1"
-                            class="btn-secondary">Пропустить</button>
-                    <button type="submit" class="btn-primary">Сохранить и скачать</button>
+                    <button type="button" onclick="submitForm()" class="btn-secondary">Пропустить</button>
+                    <button type="button" onclick="submitForm()" class="btn-primary">Сохранить и скачать</button>
                 </div>
+
+                <script>
+                function submitForm() {
+                    // Сохраняем данные формы в sessionStorage
+                    const form = document.querySelector("form");
+                    const data = new FormData(form);
+                    const params = new URLSearchParams();
+                    for (const [key, value] of data.entries()) {
+                        params.append(key, value);
+                    }
+                    sessionStorage.setItem("metaFormData", params.toString());
+                    window.location.href = "/progress";
+                }
+                </script>
             </form>
         </div>
     </div>

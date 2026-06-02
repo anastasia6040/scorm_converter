@@ -29,3 +29,5 @@ Thumbs.db
 # Переменные окружения
 .env
 .env.*
+
+user_files/

@@ -54,6 +54,7 @@
                     <th>Заголовок документа</th>
                     <th>Статус</th>
                     <th>Дата</th>
+                    <th>Скачать</th>
                 </tr>
             </thead>
             <tbody>
@@ -64,6 +65,16 @@
                     <td>{{ c.document_title or "—" }}</td>
                     <td class="{{ c.status }}">{{ c.status }}</td>
                     <td>{{ c.created_at.strftime("%d.%m.%Y %H:%M") }}</td>
+                    <td>                                              <!-- ← добавить -->
+                        {% if c.status == "success" and c.output_filename %}
+                        <a href="/download-history/{{ c.id }}"
+                        style="color:#4f46e5;text-decoration:none;font-size:0.9em">
+                            ⬇ Скачать
+                        </a>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
                 </tr>
             {% endfor %}
             </tbody>

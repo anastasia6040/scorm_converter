@@ -30,6 +30,7 @@ class Conversion(db.Model):
     status = db.Column(db.String(50), default="success")
     error_message = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    output_filename = db.Column(db.String(255), nullable=True)
 
     # Внешний ключ на пользователя
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)

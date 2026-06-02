@@ -13,7 +13,8 @@ from app.database import db, Conversion, CourseMetadata
 bp = Blueprint("main", __name__)
 
 UPLOAD_FOLDER = "/tmp/scorm_uploads"
-OUTPUT_FOLDER = "/tmp/scorm_output"
+OUTPUT_FOLDER = os.path.join(os.path.dirname(__file__), "..", "user_files")
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
 XSD_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "xsd")
 JS_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "js")
@@ -107,7 +108,8 @@ def finalize():
         with open(img_path, "rb") as f:
             images[filename] = f.read()
 
-    output_path = os.path.join(OUTPUT_FOLDER, f"{session_id}.zip")
+    output_filename = f"{session_id}.zip"
+    output_path = os.path.join(OUTPUT_FOLDER, output_filename)
 
     try:
         manifest = generate_manifest(
@@ -129,6 +131,7 @@ def finalize():
             document_title=title,
             status="success",
             user_id=current_user.id,
+            output_filename=output_filename,
         )
         db.session.add(conversion)
         db.session.flush()  # чтобы получить conversion.id до commit
@@ -173,3 +176,129 @@ def history():
     conversions = Conversion.query.filter_by(user_id=current_user.id)\
         .order_by(Conversion.created_at.desc()).all()
     return render_template("history.html", conversions=conversions)
+
+@bp.route("/download-history/<int:conversion_id>")
+@login_required
+def download_history(conversion_id):
+    conversion = Conversion.query.filter_by(
+        id=conversion_id,
+        user_id=current_user.id    # защита: только свои файлы
+    ).first()
+
+    if not conversion or not conversion.output_filename:
+        flash("Файл не найден")
+        return redirect(url_for("main.history"))
+
+    file_path = os.path.join(OUTPUT_FOLDER, conversion.output_filename)
+
+    if not os.path.exists(file_path):
+        flash("Файл был удалён с сервера")
+        return redirect(url_for("main.history"))
+
+    download_name = f"{conversion.document_title or 'scorm'}_package.zip"
+
+    return send_file(
+        file_path,
+        as_attachment=True,
+        download_name=download_name,
+        mimetype="application/zip",
+    )
+    
+@bp.route("/progress", methods=["GET"])
+@login_required
+def progress():
+    return render_template("progress.html")
+
+
+@bp.route("/finalize-ajax", methods=["POST"])
+@login_required
+def finalize_ajax():
+    """Тот же finalize, но возвращает JSON с session_id вместо send_file."""
+    session_id = session.get("session_id")
+    if not session_id:
+        return {"success": False, "error": "Сессия истекла"}, 400
+
+    title = request.form.get("title", "").strip() or session.get("document_title", "Без названия")
+    description = request.form.get("description", "").strip() or None
+    author = request.form.get("author", "").strip() or None
+    organization = request.form.get("organization", "").strip() or None
+    language = request.form.get("language", "ru").strip() or "ru"
+    version = request.form.get("version", "1.0").strip() or "1.0"
+    keywords = request.form.get("keywords", "").strip() or None
+
+    html_path = os.path.join(OUTPUT_FOLDER, f"{session_id}.html")
+    images_meta = session.get("images_meta", {})
+
+    with open(html_path, "r", encoding="utf-8") as f:
+        html = f.read()
+
+    images = {}
+    for filename, img_path in images_meta.items():
+        with open(img_path, "rb") as f:
+            images[filename] = f.read()
+
+    output_filename = f"{session_id}.zip"
+    output_path = os.path.join(OUTPUT_FOLDER, output_filename)
+
+    try:
+        manifest = generate_manifest(
+            title=title,
+            images=list(images.keys()),
+            templates_dir=TEMPLATES_DIR,
+            description=description,
+            author=author,
+            organization=organization,
+            language=language,
+            version=version,
+            keywords=keywords,
+        )
+        pack_scorm(html, manifest, images, output_path, xsd_dir=XSD_DIR, js_dir=JS_DIR)
+
+        conversion = Conversion(
+            original_filename=session.get("original_filename", ""),
+            document_title=title,
+            status="success",
+            user_id=current_user.id,
+            output_filename=output_filename,
+        )
+        db.session.add(conversion)
+        db.session.flush()
+
+        meta = CourseMetadata(
+            user_id=current_user.id,
+            conversion_id=conversion.id,
+            title=title,
+            description=description,
+            author=author,
+            organization=organization,
+            language=language,
+            version=version,
+            keywords=keywords,
+        )
+        db.session.add(meta)
+        db.session.commit()
+
+    except Exception as e:
+        db.session.rollback()
+        return {"success": False, "error": str(e)}, 500
+
+    session.pop("session_id", None)
+    session.pop("document_title", None)
+    session.pop("original_filename", None)
+    session.pop("images_meta", None)
+
+    return {"success": True, "session_id": session_id}
+
+@bp.route("/download/<session_id>")
+@login_required
+def download_file(session_id):
+    output_path = os.path.join(OUTPUT_FOLDER, f"{session_id}.zip")
+    if not os.path.exists(output_path):
+        flash("Файл не найден")
+        return redirect(url_for("main.index"))
+    return send_file(
+        output_path,
+        as_attachment=True,
+        download_name="scorm_package.zip",
+        mimetype="application/zip",
+    )

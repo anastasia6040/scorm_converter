@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Конвертация...</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .card {
+            background: white;
+            padding: 48px 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 460px;
+            width: 100%;
+            margin-top: 52px;
+        }
+        h1 { font-size: 1.4em; margin-bottom: 8px; color: #222; }
+        .subtitle { color: #888; font-size: 0.95em; margin-bottom: 32px; }
+
+        /* Прогресс-бар */
+        .progress-wrap {
+            background: #eee;
+            border-radius: 99px;
+            height: 12px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4f46e5, #818cf8);
+            border-radius: 99px;
+            transition: width 0.4s ease;
+        }
+        .progress-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 32px;
+            min-height: 20px;
+        }
+
+        /* Шаги */
+        .steps {
+            text-align: left;
+            margin-bottom: 32px;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            font-size: 0.9em;
+            color: #aaa;
+            transition: color 0.3s;
+        }
+        .step.done { color: #333; }
+        .step.active { color: #4f46e5; font-weight: bold; }
+        .step-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            flex-shrink: 0;
+            transition: background 0.3s;
+        }
+        .step.done .step-icon { background: #16a34a; color: white; }
+        .step.active .step-icon {
+            background: #4f46e5;
+            color: white;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        /* Кнопка скачать */
+        .btn-download {
+            display: none;
+            width: 100%;
+            background: #16a34a;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 1.05em;
+            cursor: pointer;
+            text-decoration: none;
+            margin-top: 8px;
+        }
+        .btn-download:hover { background: #15803d; }
+        .btn-download.visible { display: block; }
+
+        .error-msg {
+            color: #dc2626;
+            font-size: 0.9em;
+            margin-top: 16px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>Конвертация документа</h1>
+    <p class="subtitle">Пожалуйста, подождите — это займёт несколько секунд</p>
+
+    <div class="progress-wrap">
+        <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="progress-label" id="progress-label">Подготовка...</div>
+
+    <div class="steps">
+        <div class="step" id="step-1">
+            <div class="step-icon">1</div>
+            <span>Чтение документа</span>
+        </div>
+        <div class="step" id="step-2">
+            <div class="step-icon">2</div>
+            <span>Генерация HTML</span>
+        </div>
+        <div class="step" id="step-3">
+            <div class="step-icon">3</div>
+            <span>Формирование манифеста</span>
+        </div>
+        <div class="step" id="step-4">
+            <div class="step-icon">4</div>
+            <span>Упаковка в архив</span>
+        </div>
+    </div>
+
+    <a class="btn-download" id="btn-download" href="#">⬇ Скачать SCORM-пакет</a>
+    <div class="error-msg" id="error-msg"></div>
+</div>
+
+<script>
+    const fill = document.getElementById("progress-fill");
+    const label = document.getElementById("progress-label");
+    const btnDownload = document.getElementById("btn-download");
+    const errorMsg = document.getElementById("error-msg");
+
+    function setProgress(percent, text) {
+        fill.style.width = percent + "%";
+        label.textContent = text;
+    }
+
+    function setStep(stepNum, state) {
+        const el = document.getElementById("step-" + stepNum);
+        el.className = "step " + state;
+        if (state === "done") {
+            el.querySelector(".step-icon").textContent = "✓";
+        }
+    }
+
+    // Анимация прогресса — имитирует шаги конвертации
+    async function runProgress() {
+        // Шаг 1
+        setStep(1, "active");
+        setProgress(10, "Читаем документ...");
+        await delay(600);
+        setStep(1, "done");
+
+        // Шаг 2
+        setStep(2, "active");
+        setProgress(35, "Генерируем HTML-страницу...");
+        await delay(500);
+
+        // Отправляем реальный запрос на сервер
+        const formData = getFormData();
+        const fetchPromise = sendToServer(formData);
+
+        await delay(400);
+        setStep(2, "done");
+
+        // Шаг 3
+        setStep(3, "active");
+        setProgress(60, "Формируем манифест...");
+        await delay(500);
+        setStep(3, "done");
+
+        // Шаг 4
+        setStep(4, "active");
+        setProgress(85, "Упаковываем архив...");
+
+        // Ждём реального ответа сервера
+        const result = await fetchPromise;
+
+        setStep(4, "done");
+        setProgress(100, "Готово!");
+
+        if (result.success) {
+            setTimeout(function() {
+                label.textContent = "Архив успешно создан";
+                btnDownload.href = "/download/" + result.session_id;
+                btnDownload.classList.add("visible");
+            }, 400);
+        } else {
+            errorMsg.textContent = "Ошибка: " + (result.error || "что-то пошло не так");
+            errorMsg.style.display = "block";
+        }
+    }
+
+    function delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function getFormData() {
+        const saved = sessionStorage.getItem("metaFormData");
+        if (!saved) return new URLSearchParams();
+        return new URLSearchParams(saved);
+    }
+
+    async function sendToServer(params) {
+        try {
+            const response = await fetch("/finalize-ajax", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: params.toString(),
+            });
+            return await response.json();
+        } catch (e) {
+            return { success: false, error: e.message };
+        }
+    }
+
+    // Запускаем
+    runProgress();
+</script>
+</body>
+<nav style="
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 52px;
+    background: white;
+    border-bottom: 1px solid #e5e5e5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    z-index: 100;
+">
+    <span style="font-weight: bold; color: #4f46e5;">SCORM Конвертер</span>
+    <div style="display: flex; align-items: center; gap: 16px; font-size: 0.9em;">
+        <a href="/" style="color: #4f46e5; text-decoration: none;">← На главную</a>
+        <a href="/logout" style="color: #4f46e5; text-decoration: none;">Выйти</a>
+    </div>
+</nav>
+</html>
