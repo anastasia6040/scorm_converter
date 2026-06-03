@@ -87,7 +87,8 @@ def finalize():
         return redirect(url_for("main.index"))
 
     # Читаем метаданные из формы — всё необязательно
-    title = request.form.get("title", "").strip() or session.get("document_title", "Без названия")
+    title = request.form.get("title", "").strip() or session.get(
+        "document_title", "Без названия")
     description = request.form.get("description", "").strip() or None
     author = request.form.get("author", "").strip() or None
     organization = request.form.get("organization", "").strip() or None
@@ -123,7 +124,8 @@ def finalize():
             version=version,
             keywords=keywords,
         )
-        pack_scorm(html, manifest, images, output_path, xsd_dir=XSD_DIR, js_dir=JS_DIR)
+        pack_scorm(html, manifest, images, output_path,
+                   xsd_dir=XSD_DIR, js_dir=JS_DIR)
 
         # Сохраняем конвертацию в БД
         conversion = Conversion(
@@ -177,6 +179,7 @@ def history():
         .order_by(Conversion.created_at.desc()).all()
     return render_template("history.html", conversions=conversions)
 
+
 @bp.route("/download-history/<int:conversion_id>")
 @login_required
 def download_history(conversion_id):
@@ -203,7 +206,8 @@ def download_history(conversion_id):
         download_name=download_name,
         mimetype="application/zip",
     )
-    
+
+
 @bp.route("/progress", methods=["GET"])
 @login_required
 def progress():
@@ -218,7 +222,8 @@ def finalize_ajax():
     if not session_id:
         return {"success": False, "error": "Сессия истекла"}, 400
 
-    title = request.form.get("title", "").strip() or session.get("document_title", "Без названия")
+    title = request.form.get("title", "").strip() or session.get(
+        "document_title", "Без названия")
     description = request.form.get("description", "").strip() or None
     author = request.form.get("author", "").strip() or None
     organization = request.form.get("organization", "").strip() or None
@@ -252,7 +257,8 @@ def finalize_ajax():
             version=version,
             keywords=keywords,
         )
-        pack_scorm(html, manifest, images, output_path, xsd_dir=XSD_DIR, js_dir=JS_DIR)
+        pack_scorm(html, manifest, images, output_path,
+                   xsd_dir=XSD_DIR, js_dir=JS_DIR)
 
         conversion = Conversion(
             original_filename=session.get("original_filename", ""),
@@ -289,6 +295,7 @@ def finalize_ajax():
 
     return {"success": True, "session_id": session_id}
 
+
 @bp.route("/download/<session_id>")
 @login_required
 def download_file(session_id):
@@ -302,3 +309,168 @@ def download_file(session_id):
         download_name="scorm_package.zip",
         mimetype="application/zip",
     )
+
+
+@bp.route("/preview/<int:conversion_id>")
+@login_required
+def preview(conversion_id):
+    conversion = Conversion.query.filter_by(
+        id=conversion_id,
+        user_id=current_user.id
+    ).first()
+
+    if not conversion or not conversion.output_filename:
+        flash("Файл не найден")
+        return redirect(url_for("main.history"))
+
+    # Берём session_id из имени файла (убираем .zip)
+    session_id = conversion.output_filename.replace(".zip", "")
+    html_path = os.path.join(OUTPUT_FOLDER, f"{session_id}.html")
+
+    if not os.path.exists(html_path):
+        flash("Файл предпросмотра не найден")
+        return redirect(url_for("main.history"))
+
+    with open(html_path, "r", encoding="utf-8") as f:
+        html = f.read()
+
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+
+@bp.route("/delete/<int:conversion_id>", methods=["POST"])
+@login_required
+def delete_conversion(conversion_id):
+    conversion = Conversion.query.filter_by(
+        id=conversion_id,
+        user_id=current_user.id
+    ).first()
+
+    if not conversion:
+        flash("Запись не найдена")
+        return redirect(url_for("main.history"))
+
+    # Удаляем файлы с диска
+    if conversion.output_filename:
+        zip_path = os.path.join(OUTPUT_FOLDER, conversion.output_filename)
+        session_id = conversion.output_filename.replace(".zip", "")
+        html_path = os.path.join(OUTPUT_FOLDER, f"{session_id}.html")
+
+        for path in [zip_path, html_path]:
+            if os.path.exists(path):
+                os.remove(path)
+
+        # Удаляем изображения
+        for f in os.listdir(OUTPUT_FOLDER):
+            if f.startswith(session_id + "_"):
+                os.remove(os.path.join(OUTPUT_FOLDER, f))
+
+    # Удаляем из БД
+    if conversion.metadata:
+        for meta in conversion.metadata:
+            db.session.delete(meta)
+    db.session.delete(conversion)
+    db.session.commit()
+
+    return redirect(url_for("main.history"))
+
+
+@bp.route("/edit/<int:conversion_id>")
+@login_required
+def edit(conversion_id):
+    conversion = Conversion.query.filter_by(
+        id=conversion_id,
+        user_id=current_user.id
+    ).first()
+
+    if not conversion or not conversion.output_filename:
+        flash("Файл не найден")
+        return redirect(url_for("main.history"))
+
+    session_id = conversion.output_filename.replace(".zip", "")
+    html_path = os.path.join(OUTPUT_FOLDER, f"{session_id}.html")
+
+    if not os.path.exists(html_path):
+        flash("Файл не найден")
+        return redirect(url_for("main.history"))
+
+    with open(html_path, "r", encoding="utf-8") as f:
+        html_content = f.read()
+
+    return render_template(
+        "editor.html",
+        conversion=conversion,
+        html_content=html_content,
+    )
+
+
+@bp.route("/edit/<int:conversion_id>/save", methods=["POST"])
+@login_required
+def save_edit(conversion_id):
+    conversion = Conversion.query.filter_by(
+        id=conversion_id,
+        user_id=current_user.id
+    ).first()
+
+    if not conversion or not conversion.output_filename:
+        return {"success": False, "error": "Файл не найден"}, 404
+
+    session_id = conversion.output_filename.replace(".zip", "")
+    html_path = os.path.join(OUTPUT_FOLDER, f"{session_id}.html")
+
+    new_content = request.json.get("content", "")
+    if not new_content:
+        return {"success": False, "error": "Пустое содержимое"}, 400
+
+    # Сохраняем обновлённый HTML
+    with open(html_path, "w", encoding="utf-8") as f:
+        f.write(new_content)
+
+    # Перепаковываем zip с новым HTML
+    output_path = os.path.join(OUTPUT_FOLDER, conversion.output_filename)
+    images = {}
+    for fname in os.listdir(OUTPUT_FOLDER):
+        if fname.startswith(session_id + "_"):
+            img_name = fname[len(session_id) + 1:]
+            with open(os.path.join(OUTPUT_FOLDER, fname), "rb") as f:
+                images[img_name] = f.read()
+
+    try:
+        meta = conversion.metadata[0] if conversion.metadata else None
+        manifest = generate_manifest(
+            title=meta.title if meta else conversion.document_title,
+            images=list(images.keys()),
+            templates_dir=TEMPLATES_DIR,
+            description=meta.description if meta else None,
+            author=meta.author if meta else None,
+            organization=meta.organization if meta else None,
+            language=meta.language if meta else "ru",
+            version=meta.version if meta else "1.0",
+            keywords=meta.keywords if meta else None,
+        )
+        pack_scorm(new_content, manifest, images, output_path,
+                   xsd_dir=XSD_DIR, js_dir=JS_DIR)
+    except Exception as e:
+        return {"success": False, "error": str(e)}, 500
+
+    return {"success": True}
+
+
+@bp.route("/course-image/<int:conversion_id>/<filename>")
+@login_required
+def course_image(conversion_id, filename):
+    conversion = Conversion.query.filter_by(
+        id=conversion_id,
+        user_id=current_user.id
+    ).first()
+
+    if not conversion:
+        return "", 404
+
+    session_id = conversion.output_filename.replace(".zip", "")
+    img_path = os.path.join(OUTPUT_FOLDER, f"{session_id}_{filename}")
+
+    if not os.path.exists(img_path):
+        return "", 404
+
+    return send_file(img_path)
+

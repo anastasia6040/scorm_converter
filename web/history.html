@@ -2,86 +2,571 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>История конвертаций</title>
+    <title>Мои курсы — SCORM Конвертер</title>
     <style>
-        * { box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f8f7ff;
+            min-height: 100vh;
+            color: #1e1b4b;
+        }
+
+        /* Шапка */
         nav {
             background: white;
-            border-bottom: 1px solid #e5e5e5;
-            padding: 0 32px;
-            height: 56px;
+            border-bottom: 1px solid #ede9fe;
+            padding: 0 40px;
+            height: 64px;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
-        .nav-logo { font-weight: bold; color: #4f46e5; font-size: 1.1em; }
-        .nav-right { display: flex; align-items: center; gap: 16px; font-size: 0.9em; }
-        .nav-user { color: #555; }
-        .nav-right a { color: #4f46e5; text-decoration: none; }
-        .nav-right a:hover { text-decoration: underline; }
-        .content { max-width: 900px; margin: 40px auto; padding: 0 20px; }
-        h1 { margin-bottom: 24px; }
-        table { width: 100%; border-collapse: collapse; background: white;
-                border-radius: 8px; overflow: hidden;
-                box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
-        th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid #eee; }
-        th { background: #f9f9f9; font-weight: 600; color: #444; }
-        .success { color: #16a34a; }
-        .error   { color: #dc2626; }
-        .empty { color: #999; margin-top: 24px; }
+
+        .nav-logo {
+            text-decoration: none;
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+
+        .nav-logo-scorm {
+            font-size: 1.2em;
+            font-weight: 800;
+            color: #4f46e5;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-logo-sub {
+            font-size: 1em;
+            font-weight: 400;
+            color: #6b7280;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .nav-user {
+            font-size: 0.88em;
+            color: #6b7280;
+            padding: 6px 12px;
+            border-right: 1px solid #e5e7eb;
+            margin-right: 4px;
+        }
+
+        .nav-link {
+            font-size: 0.88em;
+            color: #4b5563;
+            text-decoration: none;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .nav-link:hover { background: #f3f4f6; color: #1e1b4b; }
+        .nav-link.logout { color: #6b7280; }
+
+        /* Страница */
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 48px 24px;
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-header h1 {
+            font-size: 1.6em;
+            font-weight: 800;
+            color: #1e1b4b;
+            margin-bottom: 6px;
+        }
+
+        .page-header p {
+            color: #6b7280;
+            font-size: 0.92em;
+        }
+
+        /* Сетка карточек */
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        /* Карточка курса */
+        .course-card {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 2px 12px rgba(79,70,229,0.07),
+                        0 1px 3px rgba(0,0,0,0.04);
+            overflow: hidden;
+            transition: transform 0.15s, box-shadow 0.15s;
+            border: 1px solid #f3f0ff;
+        }
+
+        .course-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(79,70,229,0.12),
+                        0 1px 4px rgba(0,0,0,0.06);
+        }
+
+        /* Превью */
+        .course-preview {
+            height: 160px;
+            background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .course-preview {
+            height: 160px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+        }
+
+        .course-preview iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1024px;        /* фиксированная ширина как у обычного экрана */
+            height: 768px;        /* фиксированная высота */
+            transform: scale(0.33);  /* уменьшаем до четверти */
+            transform-origin: top left;
+            pointer-events: none;
+            border: none;
+        }
+
+        .preview-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(79,70,229,0.0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s, background 0.2s;
+        }
+
+        .course-preview:hover .preview-overlay {
+            opacity: 1;
+            background: rgba(79,70,229,0.15);
+        }
+
+        .preview-btn {
+            background: white;
+            color: #4f46e5;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Плейсхолдер если нет превью */
+        .preview-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: #a78bfa;
+        }
+
+        .preview-placeholder .icon { font-size: 2.4em; }
+        .preview-placeholder span {
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+
+        /* Информация о курсе */
+        .course-info {
+            padding: 16px;
+        }
+
+        .course-title {
+            font-size: 0.95em;
+            font-weight: 700;
+            color: #1e1b4b;
+            margin-bottom: 6px;
+            line-height: 1.4;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .course-meta {
+            font-size: 0.78em;
+            color: #9ca3af;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        /* Нижняя часть карточки */
+        .course-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px 14px;
+        }
+
+        .course-status {
+            font-size: 0.75em;
+            padding: 3px 10px;
+            border-radius: 99px;
+            font-weight: 600;
+        }
+
+        .course-status.success {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .course-status.error {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        /* Меню трёх точек */
+        .menu-wrap {
+            position: relative;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 1.1em;
+            color: #6b7280;
+            transition: background 0.15s;
+            line-height: 1;
+        }
+
+        .menu-btn:hover { background: #f3f4f6; }
+
+        .dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            bottom: 100%;
+            margin-bottom: 4px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+            border: 1px solid #f3f4f6;
+            min-width: 160px;
+            z-index: 100;
+            overflow: hidden;
+        }
+
+        .dropdown.open { display: block; }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            font-size: 0.87em;
+            color: #374151;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.12s;
+            border: none;
+            background: none;
+            width: 100%;
+            font-family: inherit;
+            text-align: left;
+        }
+
+        .dropdown-item:hover { background: #f9fafb; }
+
+        .dropdown-item.danger {
+            color: #dc2626;
+        }
+
+        .dropdown-item.danger:hover { background: #fef2f2; }
+
+        .dropdown-divider {
+            height: 1px;
+            background: #f3f4f6;
+            margin: 4px 0;
+        }
+
+        /* Пустое состояние */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .empty-icon { font-size: 3em; margin-bottom: 16px; }
+
+        .empty-state h2 {
+            font-size: 1.2em;
+            color: #1e1b4b;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: #9ca3af;
+            font-size: 0.9em;
+            margin-bottom: 24px;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+            text-decoration: none;
+            padding: 11px 24px;
+            border-radius: 10px;
+            font-size: 0.92em;
+            font-weight: 600;
+            display: inline-block;
+            transition: background 0.15s;
+        }
+
+        .btn-primary:hover { background: #4338ca; }
+
+        /* Модалка подтверждения удаления */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.open { display: flex; }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 360px;
+            width: 100%;
+            margin: 16px;
+            text-align: center;
+        }
+
+        .modal h3 {
+            font-size: 1.1em;
+            color: #1e1b4b;
+            margin-bottom: 8px;
+        }
+
+        .modal p {
+            color: #6b7280;
+            font-size: 0.88em;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-cancel {
+            flex: 1;
+            background: #f3f4f6;
+            color: #374151;
+            border: none;
+            padding: 11px;
+            border-radius: 8px;
+            font-size: 0.92em;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .btn-delete {
+            flex: 1;
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 11px;
+            border-radius: 8px;
+            font-size: 0.92em;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .btn-delete:hover { background: #b91c1c; }
     </style>
 </head>
 <body>
-    <nav>
-        <span class="nav-logo">SCORM Конвертер</span>
-        <div class="nav-right">
-            <span class="nav-user">{{ current_user.username }}</span>
-            <a href="/">Конвертировать</a>
-            <a href="/logout">Выйти</a>
-        </div>
-    </nav>
 
-    <div class="content">
-        <h1>История конвертаций</h1>
-
-        {% if conversions %}
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Имя файла</th>
-                    <th>Заголовок документа</th>
-                    <th>Статус</th>
-                    <th>Дата</th>
-                    <th>Скачать</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for c in conversions %}
-                <tr>
-                    <td>{{ c.id }}</td>
-                    <td>{{ c.original_filename }}</td>
-                    <td>{{ c.document_title or "—" }}</td>
-                    <td class="{{ c.status }}">{{ c.status }}</td>
-                    <td>{{ c.created_at.strftime("%d.%m.%Y %H:%M") }}</td>
-                    <td>                                              <!-- ← добавить -->
-                        {% if c.status == "success" and c.output_filename %}
-                        <a href="/download-history/{{ c.id }}"
-                        style="color:#4f46e5;text-decoration:none;font-size:0.9em">
-                            ⬇ Скачать
-                        </a>
-                        {% else %}
-                        —
-                        {% endif %}
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-            <p class="empty">Конвертаций пока не было.</p>
-        {% endif %}
+<nav>
+    <a class="nav-logo" href="/">
+        <span class="nav-logo-scorm">SCORM</span>
+        <span class="nav-logo-sub">конвертер</span>
+    </a>
+    <div class="nav-right">
+        <span class="nav-user">{{ current_user.username }}</span>
+        <a class="nav-link" href="/">Конвертировать</a>
+        <a class="nav-link logout" href="/logout">Выйти</a>
     </div>
+</nav>
+
+<div class="page">
+    <div class="page-header">
+        <h1>Мои курсы</h1>
+        <p>Все сконвертированные SCORM-пакеты</p>
+    </div>
+
+    {% if conversions %}
+    <div class="courses-grid">
+        {% for c in conversions %}
+        <div class="course-card">
+
+            <!-- Превью -->
+            <div class="course-preview"
+                 onclick="window.open('/preview/{{ c.id }}', '_blank')">
+                {% if c.status == "success" and c.output_filename %}
+                    <iframe src="/preview/{{ c.id }}"
+                            scrolling="no"
+                            tabindex="-1">
+                    </iframe>
+                    <div class="preview-overlay">
+                        <button class="preview-btn">Открыть →</button>
+                    </div>
+                {% else %}
+                    <div class="preview-placeholder">
+                        <span class="icon">⚠️</span>
+                        <span>Ошибка конвертации</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Информация -->
+            <div class="course-info">
+                <div class="course-title"
+                     title="{{ c.document_title or c.original_filename }}">
+                    {{ c.document_title or "Без названия" }}
+                </div>
+                <div class="course-meta">
+                    {{ c.original_filename }}<br>
+                    {{ c.created_at.strftime("%d.%m.%Y, %H:%M") }}
+                </div>
+            </div>
+
+            <!-- Футер карточки -->
+            <div class="course-footer">
+                <span class="course-status {{ c.status }}">
+                    {% if c.status == "success" %}Готов{% else %}Ошибка{% endif %}
+                </span>
+
+                <!-- Три точки -->
+                <div class="menu-wrap">
+                    <button class="menu-btn" onclick="toggleMenu({{ c.id }}, event)">
+                        •••
+                    </button>
+                    <div class="dropdown" id="menu-{{ c.id }}">
+                        {% if c.status == "success" and c.output_filename %}
+                        <a class="dropdown-item"
+                           href="/preview/{{ c.id }}"
+                           target="_blank">
+                            👁 Просмотреть
+                        </a>
+                        <a class="dropdown-item"
+                            href="/edit/{{ c.id }}">
+                            ✏️ Редактировать
+                        </a>
+                        <a class="dropdown-item"
+                           href="/download-history/{{ c.id }}">
+                            ⬇ Скачать архив
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        {% endif %}
+                        <button class="dropdown-item danger"
+                                onclick="confirmDelete({{ c.id }}, '{{ c.document_title or c.original_filename }}')">
+                            🗑 Удалить
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <h2>Курсов пока нет</h2>
+        <p>Загрузите документ Word и конвертируйте его в SCORM-пакет</p>
+        <a href="/" class="btn-primary">Конвертировать →</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Модалка подтверждения удаления -->
+<div class="modal-overlay" id="delete-modal">
+    <div class="modal">
+        <h3>Удалить курс?</h3>
+        <p id="delete-modal-text">Это действие нельзя отменить. Файл будет удалён с сервера.</p>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModal()">Отмена</button>
+            <form id="delete-form" method="POST" style="flex:1">
+                <button type="submit" class="btn-delete" style="width:100%">Удалить</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Меню трёх точек
+    function toggleMenu(id, event) {
+        event.stopPropagation();
+        const menu = document.getElementById("menu-" + id);
+        const isOpen = menu.classList.contains("open");
+        // Закрываем все меню
+        document.querySelectorAll(".dropdown").forEach(m => m.classList.remove("open"));
+        if (!isOpen) menu.classList.add("open");
+    }
+
+    // Закрывать меню при клике вне
+    document.addEventListener("click", function() {
+        document.querySelectorAll(".dropdown").forEach(m => m.classList.remove("open"));
+    });
+
+    // Модалка удаления
+    function confirmDelete(id, title) {
+        document.getElementById("delete-modal-text").textContent =
+            `Курс "${title}" будет удалён безвозвратно.`;
+        document.getElementById("delete-form").action = "/delete/" + id;
+        document.getElementById("delete-modal").classList.add("open");
+        document.querySelectorAll(".dropdown").forEach(m => m.classList.remove("open"));
+    }
+
+    function closeModal() {
+        document.getElementById("delete-modal").classList.remove("open");
+    }
+
+    // Закрывать модалку по клику на фон
+    document.getElementById("delete-modal").addEventListener("click", function(e) {
+        if (e.target === this) closeModal();
+    });
+</script>
+
 </body>
 </html>
