@@ -232,8 +232,10 @@
 <!-- Контент разделов -->
 <main>
     {% for section in sections %}
+    <!-- стало -->
     <div class="section-content {% if loop.first %}active{% endif %}"
-         id="section-{{ loop.index0 }}">
+        id="section-{{ loop.index0 }}">
+    <!--SECTION_START_{{ loop.index0 }}-->
 
         {# Макрос для рендеринга run #}
         {% macro render_run(run) %}
@@ -309,6 +311,7 @@
         {% if ns.in_ul %}</ul>{% endif %}
         {% if ns.in_ol %}</ol>{% endif %}
 
+    <!--SECTION_END_{{ loop.index0 }}-->
     </div>
     {% endfor %}
 </main>

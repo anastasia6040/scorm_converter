@@ -392,27 +392,17 @@
 
     <script>
         const rawHtml = {{ html_content | tojson }};
+        const conversionId = {{ conversion.id }};
 
         function extractSections(html) {
             const sections = [];
-            const regex = /<div[^>]*id="section-(\d+)"[^>]*>([\s\S]*?)<\/div>\s*(?=<div[^>]*id="section-\d+"|<\/main>)/g;
+            const regex = /<!--SECTION_START_(\d+)-->([\s\S]*?)<!--SECTION_END_\1-->/g;
             let match;
             while ((match = regex.exec(html)) !== null) {
                 sections.push({
                     index: parseInt(match[1]),
                     content: match[2]
                 });
-            }
-            const lastRegex = /<div[^>]*id="section-(\d+)"[^>]*>([\s\S]*?)<\/div>\s*<\/main>/;
-            const lastMatch = html.match(lastRegex);
-            if (lastMatch) {
-                const lastIndex = parseInt(lastMatch[1]);
-                const exists = sections.find(s => s.index === lastIndex);
-                if (!exists) {
-                    sections.push({ index: lastIndex, content: lastMatch[2] });
-                } else {
-                    exists.content = lastMatch[2];
-                }
             }
             return sections;
         }
@@ -422,8 +412,7 @@
         sections.forEach((s, i) => console.log("Секция", i, "длина:", s.content.length));
 
         let currentIndex = 0;
-        let initialized = false;  // ← добавить
-        const conversionId = {{ conversion.id }};
+        let initialized = false;
 
         function fixImagePaths(html) {
             return html.split('src="images/').join('src="/course-image/' + conversionId + '/');
@@ -443,7 +432,6 @@
         }
 
         function loadSection(index) {
-            // Сохраняем текущий раздел только после инициализации
             if (initialized && sections[currentIndex]) {
                 sections[currentIndex].content = restoreImagePaths(
                     document.getElementById("editor-content").innerHTML
@@ -455,6 +443,7 @@
 
             if (section) {
                 const content = fixImagePaths(section.content);
+                console.log("Загружаем раздел", index, "длина:", content.length);
                 document.getElementById("editor-content").innerHTML = content;
             }
 
@@ -465,7 +454,7 @@
             });
 
             updateOutline();
-            initialized = true;  // ← устанавливаем после первой загрузки
+            initialized = true;
         }
 
         function buildSectionList() {
@@ -510,11 +499,11 @@
             let updatedHtml = rawHtml;
             sections.forEach(function(section) {
                 const escapedContent = section.content.replace(/\$/g, '$$$$');
-                const sectionRegex = new RegExp(
-                    '(<div[^>]*id="section-' + section.index + '"[^>]*>)[\\s\\S]*?(<\\/div>)',
-                    'g'
+                const marker = '<!--SECTION_START_' + section.index + '-->[\\s\\S]*?<!--SECTION_END_' + section.index + '-->';
+                updatedHtml = updatedHtml.replace(
+                    new RegExp(marker),
+                    '<!--SECTION_START_' + section.index + '-->' + escapedContent + '<!--SECTION_END_' + section.index + '-->'
                 );
-                updatedHtml = updatedHtml.replace(sectionRegex, '$1' + escapedContent + '$2');
             });
 
             try {

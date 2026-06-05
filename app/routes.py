@@ -323,7 +323,6 @@ def preview(conversion_id):
         flash("Файл не найден")
         return redirect(url_for("main.history"))
 
-    # Берём session_id из имени файла (убираем .zip)
     session_id = conversion.output_filename.replace(".zip", "")
     html_path = os.path.join(OUTPUT_FOLDER, f"{session_id}.html")
 
@@ -333,6 +332,12 @@ def preview(conversion_id):
 
     with open(html_path, "r", encoding="utf-8") as f:
         html = f.read()
+
+    # Заменяем относительные пути к картинкам на абсолютные
+    html = html.replace(
+        'src="images/',
+        f'src="/course-image/{conversion_id}/'
+    )
 
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
