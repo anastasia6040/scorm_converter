@@ -361,7 +361,7 @@
         <!-- Боковая панель -->
         <div class="sidebar">
             <div class="sidebar-section">
-                <h3>Структура</h3>
+                <h3>Разделы</h3>
                 <div id="outline"></div>
             </div>
 
@@ -391,52 +391,158 @@
     </div>
 
     <script>
-        // Вставляем контент
         const rawHtml = {{ html_content | tojson }};
 
-        // Извлекаем только содержимое <body>
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(rawHtml, "text/html");
-        const main = doc.getElementById("course") || doc.querySelector("main");
-        if (main) {
-            // Заменяем относительные пути к картинкам на абсолютные
-            let content = main.innerHTML;
-            content = content.replace(
-                /src="images\//g,
-                'src="/course-image/{{ conversion.id }}/'
-            );
-            document.getElementById("editor-content").innerHTML = content;
-        } else {
-            document.getElementById("editor-content").innerHTML = doc.body.innerHTML;
+        function extractSections(html) {
+            const sections = [];
+            const regex = /<div[^>]*id="section-(\d+)"[^>]*>([\s\S]*?)<\/div>\s*(?=<div[^>]*id="section-\d+"|<\/main>)/g;
+            let match;
+            while ((match = regex.exec(html)) !== null) {
+                sections.push({
+                    index: parseInt(match[1]),
+                    content: match[2]
+                });
+            }
+            const lastRegex = /<div[^>]*id="section-(\d+)"[^>]*>([\s\S]*?)<\/div>\s*<\/main>/;
+            const lastMatch = html.match(lastRegex);
+            if (lastMatch) {
+                const lastIndex = parseInt(lastMatch[1]);
+                const exists = sections.find(s => s.index === lastIndex);
+                if (!exists) {
+                    sections.push({ index: lastIndex, content: lastMatch[2] });
+                } else {
+                    exists.content = lastMatch[2];
+                }
+            }
+            return sections;
         }
 
-        // Обновляем оглавление
+        const sections = extractSections(rawHtml);
+        console.log("Секций найдено:", sections.length);
+        sections.forEach((s, i) => console.log("Секция", i, "длина:", s.content.length));
+
+        let currentIndex = 0;
+        let initialized = false;  // ← добавить
+        const conversionId = {{ conversion.id }};
+
+        function fixImagePaths(html) {
+            return html.split('src="images/').join('src="/course-image/' + conversionId + '/');
+        }
+
+        function restoreImagePaths(html) {
+            return html.split('src="/course-image/' + conversionId + '/').join('src="images/');
+        }
+
         function updateOutline() {
-            const headings = document.querySelectorAll(
-                "#editor-content h1, #editor-content h2, #editor-content h3"
-            );
+            const h1 = document.querySelector("#editor-content h1");
+            const items = document.querySelectorAll(".outline-item");
+            if (h1 && items[currentIndex]) {
+                items[currentIndex].textContent =
+                    (currentIndex + 1) + ". " + h1.textContent;
+            }
+        }
+
+        function loadSection(index) {
+            // Сохраняем текущий раздел только после инициализации
+            if (initialized && sections[currentIndex]) {
+                sections[currentIndex].content = restoreImagePaths(
+                    document.getElementById("editor-content").innerHTML
+                );
+            }
+
+            currentIndex = index;
+            const section = sections[index];
+
+            if (section) {
+                const content = fixImagePaths(section.content);
+                document.getElementById("editor-content").innerHTML = content;
+            }
+
+            document.querySelectorAll(".outline-item").forEach((item, i) => {
+                item.style.color = i === index ? "#4f46e5" : "#6b7280";
+                item.style.fontWeight = i === index ? "700" : "400";
+                item.style.background = i === index ? "#ede9fe" : "transparent";
+            });
+
+            updateOutline();
+            initialized = true;  // ← устанавливаем после первой загрузки
+        }
+
+        function buildSectionList() {
             const outline = document.getElementById("outline");
             outline.innerHTML = "";
-            headings.forEach(function (h) {
+
+            sections.forEach(function(section, i) {
+                const h1Match = section.content.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+                const title = h1Match
+                    ? h1Match[1].replace(/<[^>]+>/g, "").trim()
+                    : ("Раздел " + (i + 1));
+
                 const item = document.createElement("div");
+                item.className = "outline-item";
                 item.style.cssText = `
-                font-size: 0.8em;
-                padding: 4px 0 4px ${(parseInt(h.tagName[1]) - 1) * 10}px;
-                color: #6b7280;
-                cursor: pointer;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            `;
-                item.textContent = h.textContent;
-                item.onclick = function () { h.scrollIntoView({ behavior: "smooth" }); };
+                    font-size: 0.82em;
+                    padding: 7px 10px;
+                    border-radius: 7px;
+                    color: #6b7280;
+                    cursor: pointer;
+                    margin-bottom: 3px;
+                    transition: background 0.12s, color 0.12s;
+                    line-height: 1.4;
+                `;
+                item.textContent = (i + 1) + ". " + title;
+                item.onclick = function() { loadSection(i); };
                 outline.appendChild(item);
             });
         }
 
-        updateOutline();
+        async function saveContent() {
+            if (sections[currentIndex]) {
+                sections[currentIndex].content = restoreImagePaths(
+                    document.getElementById("editor-content").innerHTML
+                );
+            }
 
-        // Форматирование
+            const status = document.getElementById("save-status");
+            status.textContent = "Сохраняем...";
+            status.className = "save-status saving";
+
+            let updatedHtml = rawHtml;
+            sections.forEach(function(section) {
+                const escapedContent = section.content.replace(/\$/g, '$$$$');
+                const sectionRegex = new RegExp(
+                    '(<div[^>]*id="section-' + section.index + '"[^>]*>)[\\s\\S]*?(<\\/div>)',
+                    'g'
+                );
+                updatedHtml = updatedHtml.replace(sectionRegex, '$1' + escapedContent + '$2');
+            });
+
+            try {
+                const response = await fetch("/edit/" + conversionId + "/save", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ content: updatedHtml }),
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    status.textContent = "Сохранено ✓";
+                    status.className = "save-status saved";
+                    setTimeout(() => {
+                        status.textContent = "";
+                        status.className = "save-status";
+                    }, 3000);
+                } else {
+                    status.textContent = "Ошибка: " + (result.error || "неизвестная");
+                    status.className = "save-status error";
+                }
+            } catch (e) {
+                status.textContent = "Ошибка сохранения";
+                status.className = "save-status error";
+            }
+        }
+
         function format(cmd) {
             document.execCommand(cmd, false, null);
             document.getElementById("editor-content").focus();
@@ -461,73 +567,33 @@
             const url = prompt("Введите URL:");
             if (url) {
                 document.execCommand("createLink", false, url);
-                // Открывать в новой вкладке
                 document.querySelectorAll("#editor-content a").forEach(a => {
                     a.target = "_blank";
                 });
             }
         }
 
-        // Сохранение
-        async function saveContent() {
-            const status = document.getElementById("save-status");
-            status.textContent = "Сохраняем...";
-            status.className = "save-status saving";
-
-            const editedContent = document.getElementById("editor-content").innerHTML;
-
-            // Вставляем отредактированный контент обратно в main оригинального HTML
-            const parser = new DOMParser();
-            const originalDoc = parser.parseFromString(rawHtml, "text/html");
-
-            const main = originalDoc.getElementById("course") || originalDoc.querySelector("main");
-            if (main) {
-                // Возвращаем пути картинок к относительным перед сохранением
-                let restoredContent = editedContent.replace(
-                    /src="\/course-image\/{{ conversion.id }}\//g,
-                    'src="images/'
-                );
-                main.innerHTML = restoredContent;
-            }
-
-            const fullHtml = originalDoc.documentElement.outerHTML;
-
-            try {
-                const response = await fetch("/edit/{{ conversion.id }}/save", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ content: fullHtml }),
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    status.textContent = "Сохранено ✓";
-                    status.className = "save-status saved";
-                    setTimeout(() => {
-                        status.textContent = "";
-                        status.className = "save-status";
-                    }, 3000);
-                } else {
-                    status.textContent = "Ошибка сохранения";
-                    status.className = "save-status error";
+        buildSectionList();
+        setTimeout(() => {
+            if (sections.length > 0) {
+                loadSection(0);
+            } else {
+                const mainMatch = rawHtml.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+                if (mainMatch) {
+                    document.getElementById("editor-content").innerHTML =
+                        fixImagePaths(mainMatch[1]);
                 }
-            } catch (e) {
-                status.textContent = "Ошибка сохранения";
-                status.className = "save-status error";
             }
-        }
+        }, 0);
 
-        // Ctrl+S для сохранения
-        document.addEventListener("keydown", function (e) {
+        document.addEventListener("keydown", function(e) {
             if ((e.ctrlKey || e.metaKey) && e.key === "s") {
                 e.preventDefault();
                 saveContent();
             }
         });
 
-        // Обновляем оглавление при изменениях
-        document.getElementById("editor-content").addEventListener("input", function () {
+        document.getElementById("editor-content").addEventListener("input", function() {
             updateOutline();
         });
     </script>
