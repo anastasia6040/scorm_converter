@@ -2,136 +2,256 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Метаданные курса</title>
+    <title>Метаданные курса — SCORM Конвертер</title>
     <style>
-        * { box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f8f7ff;
+            min-height: 100vh;
+            color: #1e1b4b;
+        }
+
         nav {
             background: white;
-            border-bottom: 1px solid #e5e5e5;
-            padding: 0 32px;
-            height: 56px;
+            border-bottom: 1px solid #ede9fe;
+            padding: 0 40px;
+            height: 64px;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
-        .nav-logo { font-weight: bold; color: #4f46e5; font-size: 1.1em; }
-        .nav-right { display: flex; align-items: center; gap: 16px; font-size: 0.9em; }
-        .nav-right a { color: #4f46e5; text-decoration: none; }
-        .page { display: flex; justify-content: center; padding: 40px 20px; }
+
+        .nav-logo {
+            text-decoration: none;
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+
+        .nav-logo-scorm {
+            font-size: 1.2em;
+            font-weight: 800;
+            color: #4f46e5;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-logo-sub {
+            font-size: 1em;
+            font-weight: 400;
+            color: #6b7280;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .nav-link {
+            font-size: 0.88em;
+            color: #4b5563;
+            text-decoration: none;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .nav-link:hover { background: #f3f4f6; color: #1e1b4b; }
+        .nav-link.logout { color: #6b7280; }
+
+        .page {
+            display: flex;
+            justify-content: center;
+            padding: 48px 20px;
+        }
+
         .card {
             background: white;
             padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 2px 16px rgba(79,70,229,0.07),
+                        0 1px 3px rgba(0,0,0,0.04);
             width: 100%;
             max-width: 520px;
         }
-        h1 { font-size: 1.4em; margin-bottom: 4px; }
-        .subtitle { color: #888; font-size: 0.9em; margin-bottom: 28px; }
-        label { display: block; font-size: 0.9em; color: #555; margin-bottom: 4px; }
-        .optional { color: #aaa; font-size: 0.8em; margin-left: 4px; }
-        input[type="text"], textarea, select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 18px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 0.95em;
-            font-family: Arial, sans-serif;
+
+        .card h1 {
+            font-size: 1.4em;
+            font-weight: 800;
+            margin-bottom: 6px;
         }
+
+        .subtitle {
+            color: #6b7280;
+            font-size: 0.88em;
+            margin-bottom: 28px;
+            line-height: 1.5;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 5px;
+        }
+
+        .optional {
+            color: #9ca3af;
+            font-size: 0.8em;
+            font-weight: 400;
+            margin-left: 4px;
+        }
+
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 16px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 9px;
+            font-size: 0.93em;
+            font-family: inherit;
+            color: #1e1b4b;
+            background: #fafafa;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79,70,229,0.08);
+            background: white;
+        }
+
         textarea { resize: vertical; min-height: 80px; }
+
         .row { display: flex; gap: 16px; }
         .row > div { flex: 1; }
-        .actions { display: flex; gap: 12px; margin-top: 8px; }
+
+        .divider {
+            height: 1px;
+            background: #f3f4f6;
+            margin: 8px 0 20px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .btn-cancel {
+            flex: 0 0 auto;
+            background: #f3f4f6;
+            color: #4b5563;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 9px;
+            font-size: 0.93em;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s;
+        }
+
+        .btn-cancel:hover { background: #e5e7eb; }
+
         .btn-primary {
             flex: 1;
             background: #4f46e5;
             color: white;
             border: none;
             padding: 12px;
-            border-radius: 8px;
-            font-size: 1em;
+            border-radius: 9px;
+            font-size: 0.93em;
+            font-weight: 600;
             cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s;
         }
+
         .btn-primary:hover { background: #4338ca; }
-        .btn-secondary {
-            flex: 1;
-            background: white;
-            color: #4f46e5;
-            border: 2px solid #4f46e5;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 1em;
-            cursor: pointer;
-        }
-        .btn-secondary:hover { background: #f5f4ff; }
     </style>
 </head>
 <body>
-    <nav>
-        <span class="nav-logo">SCORM Конвертер</span>
-        <div class="nav-right">
-            <a href="/">← Назад</a>
-            <a href="/logout">Выйти</a>
-        </div>
-    </nav>
 
-    <div class="page">
-        <div class="card">
-            <h1>Метаданные курса</h1>
-            <p class="subtitle">Все поля необязательны — можно пропустить и скачать сразу</p>
-
-            <form action="/finalize" method="POST">
-                <label>Название курса <span class="optional">необязательно</span></label>
-                <input type="text" name="title" placeholder="{{ suggested_title }}">
-
-                <label>Описание <span class="optional">необязательно</span></label>
-                <textarea name="description" placeholder="Краткое описание содержания курса"></textarea>
-
-                <label>Автор <span class="optional">необязательно</span></label>
-                <input type="text" name="author" placeholder="Иванов Иван Иванович">
-
-                <label>Организация <span class="optional">необязательно</span></label>
-                <input type="text" name="organization" placeholder="ДВФУ">
-
-                <label>Ключевые слова <span class="optional">необязательно, через запятую</span></label>
-                <input type="text" name="keywords" placeholder="программирование, React, TypeScript">
-
-                <div class="row">
-                    <div>
-                        <label>Язык</label>
-                        <select name="language">
-                            <option value="ru" selected>Русский (ru)</option>
-                            <option value="en">English (en)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>Версия</label>
-                        <input type="text" name="version" placeholder="1.0" value="1.0">
-                    </div>
-                </div>
-
-                <div class="actions">
-                    <button type="button" onclick="submitForm()" class="btn-secondary">Пропустить</button>
-                    <button type="button" onclick="submitForm()" class="btn-primary">Сохранить и скачать</button>
-                </div>
-
-                <script>
-                function submitForm() {
-                    // Сохраняем данные формы в sessionStorage
-                    const form = document.querySelector("form");
-                    const data = new FormData(form);
-                    const params = new URLSearchParams();
-                    for (const [key, value] of data.entries()) {
-                        params.append(key, value);
-                    }
-                    sessionStorage.setItem("metaFormData", params.toString());
-                    window.location.href = "/progress";
-                }
-                </script>
-            </form>
-        </div>
+<nav>
+    <a class="nav-logo" href="/">
+        <span class="nav-logo-scorm">SCORM</span>
+        <span class="nav-logo-sub">конвертер</span>
+    </a>
+    <div class="nav-right">
+        <a class="nav-link" href="/history">Мои курсы</a>
+        <a class="nav-link logout" href="/logout">Выйти</a>
     </div>
+</nav>
+
+<div class="page">
+    <div class="card">
+        <h1>Метаданные курса</h1>
+        <p class="subtitle">Все поля необязательны — можно сразу нажать "Скачать"</p>
+
+        <form action="/finalize" method="POST">
+            <label>Название курса <span class="optional">необязательно</span></label>
+            <input type="text" name="title" placeholder="{{ suggested_title }}">
+
+            <label>Описание <span class="optional">необязательно</span></label>
+            <textarea name="description" placeholder="Краткое описание содержания курса"></textarea>
+
+            <label>Автор <span class="optional">необязательно</span></label>
+            <input type="text" name="author" placeholder="Иванов Иван Иванович">
+
+            <label>Организация <span class="optional">необязательно</span></label>
+            <input type="text" name="organization" placeholder="ДВФУ">
+
+            <label>Ключевые слова <span class="optional">необязательно, через запятую</span></label>
+            <input type="text" name="keywords" placeholder="программирование, React, TypeScript">
+
+            <div class="row">
+                <div>
+                    <label>Язык</label>
+                    <select name="language">
+                        <option value="ru" selected>Русский (ru)</option>
+                        <option value="en">English (en)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Версия</label>
+                    <input type="text" name="version" placeholder="1.0" value="1.0">
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="actions">
+                <button type="button" class="btn-cancel" onclick="window.location='/'">
+                    Отмена
+                </button>
+                <button type="button" class="btn-primary" onclick="submitForm()">
+                    Скачать →
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function submitForm() {
+    const form = document.querySelector("form");
+    const data = new FormData(form);
+    const params = new URLSearchParams();
+    for (const [key, value] of data.entries()) {
+        params.append(key, value);
+    }
+    sessionStorage.setItem("metaFormData", params.toString());
+    window.location.href = "/progress";
+}
+</script>
+
 </body>
 </html>

@@ -2,28 +2,152 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Регистрация</title>
+    <title>Регистрация — SCORM Конвертер</title>
     <style>
-        body { font-family: Arial, sans-serif; display: flex; align-items: center;
-               justify-content: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
-        .card { background: white; padding: 40px; border-radius: 12px;
-                box-shadow: 0 2px 12px rgba(0,0,0,0.1); width: 360px; }
-        h1 { margin-bottom: 24px; font-size: 1.5em; text-align: center; }
-        label { display: block; margin-bottom: 4px; font-size: 0.9em; color: #555; }
-        input[type="text"], input[type="email"], input[type="password"] {
-            width: 100%; padding: 10px; margin-bottom: 16px; border: 1px solid #ddd;
-            border-radius: 8px; box-sizing: border-box; font-size: 1em; }
-        button { width: 100%; background: #4f46e5; color: white; border: none;
-                 padding: 12px; border-radius: 8px; font-size: 1em; cursor: pointer; }
-        button:hover { background: #4338ca; }
-        .error { color: red; margin-bottom: 12px; font-size: 0.9em; }
-        .link { text-align: center; margin-top: 16px; font-size: 0.9em; }
-        a { color: #4f46e5; text-decoration: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            margin-bottom: 32px;
+        }
+
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(79, 70, 229, 0.08),
+                        0 1px 4px rgba(0,0,0,0.04);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .card-header {
+            margin-bottom: 28px;
+        }
+
+        .card-header h1 {
+            font-size: 1.6em;
+            color: #1e1b4b;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .card-header p {
+            color: #6b7280;
+            font-size: 0.9em;
+        }
+
+        .field {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 0.95em;
+            font-family: inherit;
+            color: #111827;
+            background: #fafafa;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            background: white;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            background: linear-gradient(135deg, #4f46e5, #6d28d9);
+            color: white;
+            border: none;
+            padding: 13px;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: opacity 0.2s, transform 0.1s;
+            font-family: inherit;
+        }
+
+        button[type="submit"]:hover {
+            opacity: 0.92;
+            transform: translateY(-1px);
+        }
+
+        button[type="submit"]:active { transform: translateY(0); }
+
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.88em;
+            margin-bottom: 18px;
+        }
+
+        .divider {
+            height: 1px;
+            background: #f3f4f6;
+            margin: 24px 0;
+        }
+
+        .footer-link {
+            text-align: center;
+            font-size: 0.88em;
+            color: #6b7280;
+        }
+
+        .footer-link a {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer-link a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
+
+    <div class="logo">
+        <span style="font-size:1.4em;font-weight:800;color:#4f46e5;letter-spacing:-0.5px;">SCORM</span>
+        <span style="font-size:1.2em;font-weight:400;color:#6b7280;">конвертер</span>
+    </div>
+
     <div class="card">
-        <h1>Регистрация</h1>
+        <div class="card-header">
+            <h1>Регистрация</h1>
+            <p>Создайте аккаунт чтобы начать работу</p>
+        </div>
 
         {% with messages = get_flashed_messages() %}
         {% if messages %}
@@ -33,16 +157,28 @@
         {% endif %}
         {% endwith %}
 
-        <form action="/register" method="POST">
-            <label>Имя пользователя</label>
-            <input type="text" name="username" required>
-            <label>Email</label>
-            <input type="email" name="email" required>
-            <label>Пароль</label>
-            <input type="password" name="password" required>
-            <button type="submit">Зарегистрироваться</button>
+        <form action="/register" method="POST" autocomplete="off">
+            <div class="field">
+                <label>Имя пользователя</label>
+                <input type="text" name="username" required autocomplete="off">
+            </div>
+            <div class="field">
+                <label>Email</label>
+                <input type="email" name="email" required autocomplete="off">
+            </div>
+            <div class="field">
+                <label>Пароль</label>
+                <input type="password" name="password" required autocomplete="new-password">
+            </div>
+            <button type="submit">Зарегистрироваться →</button>
         </form>
-        <div class="link">Уже есть аккаунт? <a href="/login">Войти</a></div>
+
+        <div class="divider"></div>
+
+        <div class="footer-link">
+            Уже есть аккаунт? <a href="/login">Войти</a>
+        </div>
     </div>
+
 </body>
 </html>

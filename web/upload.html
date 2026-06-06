@@ -17,7 +17,7 @@
             background: white;
             border-bottom: 1px solid #ede9fe;
             padding: 0 32px;
-            height: 60px;
+            height: 64px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -25,36 +25,57 @@
         }
 
         .nav-logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
             text-decoration: none;
-        }
-
-        .nav-logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #4f46e5, #7c3aed);
-            border-radius: 8px;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 0.95em;
+            align-items: baseline;
+            gap: 6px;
         }
 
-        .nav-logo-text {
-            font-weight: 700;
-            color: #1e1b4b;
-            font-size: 1.05em;
+        .nav-logo-scorm {
+            font-size: 1.2em;
+            font-weight: 800;
+            color: #4f46e5;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-logo-sub {
+            font-size: 1em;
+            font-weight: 400;
+            color: #6b7280;
         }
 
         .nav-right {
             display: flex;
             align-items: center;
+            gap: 4px;
+        }
+
+        .nav-user {
+            font-size: 0.88em;
+            color: #6b7280;
+            padding: 6px 12px;
+            border-right: 1px solid #e5e7eb;
+            margin-right: 4px;
+        }
+
+        .nav-link {
+            font-size: 0.88em;
+            color: #4b5563;
+            text-decoration: none;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .nav-link:hover { background: #f3f4f6; color: #1e1b4b; }
+        .nav-link.logout { color: #6b7280; }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
             gap: 8px;
-            font-size: 0.9em;
+            
         }
 
         .nav-user {
@@ -259,8 +280,8 @@
 
 <nav>
     <a class="nav-logo" href="/">
-        <div class="nav-logo-icon">S</div>
-        <span class="nav-logo-text">SCORM Конвертер</span>
+        <span class="nav-logo-scorm">SCORM</span>
+        <span class="nav-logo-sub">конвертер</span>
     </a>
     <div class="nav-right">
         <span class="nav-user">{{ current_user.username }}</span>

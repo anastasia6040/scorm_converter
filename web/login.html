@@ -25,25 +25,6 @@
             margin-bottom: 32px;
         }
 
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #4f46e5, #7c3aed);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-
-        .logo-text {
-            font-size: 1.2em;
-            font-weight: 700;
-            color: #1e1b4b;
-        }
-
         /* Карточка */
         .card {
             background: white;
@@ -170,8 +151,8 @@
 <body>
 
     <div class="logo">
-        <div class="logo-icon">S</div>
-        <span class="logo-text">SCORM Конвертер</span>
+        <span style="font-size:1.4em;font-weight:800;color:#4f46e5;letter-spacing:-0.5px;">SCORM</span>
+        <span style="font-size:1.2em;font-weight:400;color:#6b7280;">конвертер</span>
     </div>
 
     <div class="card">
@@ -191,11 +172,11 @@
         <form action="/login" method="POST">
             <div class="field">
                 <label>Email</label>
-                <input type="email" name="email" placeholder="you@example.com" required>
+                <input type="email" name="email" required autocomplete="off">
             </div>
             <div class="field">
                 <label>Пароль</label>
-                <input type="password" name="password" placeholder="••••••••" required>
+                <input type="password" name="password" required>
             </div>
             <button type="submit">Войти →</button>
         </form>
