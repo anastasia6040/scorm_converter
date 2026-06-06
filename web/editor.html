@@ -273,6 +273,12 @@
             color: #9ca3af;
             line-height: 1.5;
         }
+
+        #editor-content hr {
+            border: none;
+            border-top: 2px solid #e5e7eb;
+            margin: 1.5em 0;
+        }
     </style>
 </head>
 
@@ -292,15 +298,10 @@
 
     <!-- Панель инструментов -->
     <div class="toolbar">
-        <button class="tool-btn" onclick="format('bold')" title="Жирный">
-            <strong>Ж</strong>
-        </button>
-        <button class="tool-btn" onclick="format('italic')" title="Курсив">
-            <em>К</em>
-        </button>
-        <button class="tool-btn" onclick="format('underline')" title="Подчёркивание">
-            <u>П</u>
-        </button>
+        <button class="tool-btn" onclick="format('bold')" title="Жирный"><strong>Ж</strong></button>
+        <button class="tool-btn" onclick="format('italic')" title="Курсив"><em>К</em></button>
+        <button class="tool-btn" onclick="format('underline')" title="Подчёркивание"><u>П</u></button>
+        <button class="tool-btn" onclick="format('strikeThrough')" title="Зачёркнутый"><s>З</s></button>
 
         <div class="tool-separator"></div>
 
@@ -313,6 +314,7 @@
 
         <button class="tool-btn" onclick="format('insertUnorderedList')">• Список</button>
         <button class="tool-btn" onclick="format('insertOrderedList')">1. Список</button>
+        <button class="tool-btn" onclick="insertHR()" title="Разделитель">— Линия</button>
 
         <div class="tool-separator"></div>
 
@@ -323,16 +325,22 @@
 
         <div class="tool-separator"></div>
 
-        <div class="tool-separator"></div>
-        <label style="font-size:0.82em;color:#6b7280;display:flex;align-items:center;gap:4px;">
-            🎨
+        <label style="font-size:0.82em;color:#6b7280;display:flex;align-items:center;gap:4px;" title="Цвет текста">
+            А
             <input type="color" id="text-color" value="#000000"
-                style="width:28px;height:28px;border:none;cursor:pointer;border-radius:4px;"
+                style="width:24px;height:24px;border:none;cursor:pointer;border-radius:4px;"
                 onchange="formatColor(this.value)">
         </label>
 
+        <label style="font-size:0.82em;color:#6b7280;display:flex;align-items:center;gap:4px;" title="Цвет фона">
+            🖊
+            <input type="color" id="bg-color" value="#ffff00"
+                style="width:24px;height:24px;border:none;cursor:pointer;border-radius:4px;"
+                onchange="formatBgColor(this.value)">
+        </label>
+
         <select onchange="formatSize(this.value)"
-            style="padding:4px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:0.85em;">
+                style="padding:4px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:0.85em;">
             <option value="">Размер</option>
             <option value="1">Мелкий</option>
             <option value="3">Обычный</option>
@@ -340,7 +348,11 @@
             <option value="7">Очень крупный</option>
         </select>
 
+        <div class="tool-separator"></div>
+
         <button class="tool-btn" onclick="insertLink()">🔗 Ссылка</button>
+        <button class="tool-btn" onclick="insertImage()" title="Вставить изображение">🖼 Картинка</button>
+        <button class="tool-btn" onclick="format('removeFormat')" title="Убрать форматирование">✕ Очистить</button>
 
         <div class="tool-separator"></div>
 
@@ -397,7 +409,7 @@
         function extractSections(html) {
             const sections = [];
             const regex = /<!--SECTION_START_(\d+)-->([\s\S]*?)<!--SECTION_END_\1-->/g;
-            let match;
+                let match;
             while ((match = regex.exec(html)) !== null) {
                 sections.push({
                     index: parseInt(match[1]),
@@ -461,7 +473,7 @@
             const outline = document.getElementById("outline");
             outline.innerHTML = "";
 
-            sections.forEach(function(section, i) {
+            sections.forEach(function (section, i) {
                 const h1Match = section.content.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
                 const title = h1Match
                     ? h1Match[1].replace(/<[^>]+>/g, "").trim()
@@ -480,7 +492,7 @@
                     line-height: 1.4;
                 `;
                 item.textContent = (i + 1) + ". " + title;
-                item.onclick = function() { loadSection(i); };
+                item.onclick = function () { loadSection(i); };
                 outline.appendChild(item);
             });
         }
@@ -497,7 +509,7 @@
             status.className = "save-status saving";
 
             let updatedHtml = rawHtml;
-            sections.forEach(function(section) {
+            sections.forEach(function (section) {
                 const escapedContent = section.content.replace(/\$/g, '$$$$');
                 const marker = '<!--SECTION_START_' + section.index + '-->[\\s\\S]*?<!--SECTION_END_' + section.index + '-->';
                 updatedHtml = updatedHtml.replace(
@@ -562,6 +574,33 @@
             }
         }
 
+        function insertImage() {
+            const url = prompt("Введите URL изображения:");
+            if (url) {
+                document.execCommand("insertImage", false, url);
+                // Находим только что вставленную картинку и задаём стиль
+                const imgs = document.querySelectorAll("#editor-content img");
+                if (imgs.length > 0) {
+                    const last = imgs[imgs.length - 1];
+                    last.style.maxWidth = "100%";
+                    last.style.borderRadius = "6px";
+                    last.style.margin = "1em 0";
+                    last.style.display = "block";
+                }
+                document.getElementById("editor-content").focus();
+            }
+        }
+
+        function formatBgColor(color) {
+            document.execCommand("hiliteColor", false, color);
+            document.getElementById("editor-content").focus();
+        }
+
+        function insertHR() {
+            document.execCommand("insertHorizontalRule", false, null);
+            document.getElementById("editor-content").focus();
+        }
+
         buildSectionList();
         setTimeout(() => {
             if (sections.length > 0) {
@@ -575,14 +614,14 @@
             }
         }, 0);
 
-        document.addEventListener("keydown", function(e) {
+        document.addEventListener("keydown", function (e) {
             if ((e.ctrlKey || e.metaKey) && e.key === "s") {
                 e.preventDefault();
                 saveContent();
             }
         });
 
-        document.getElementById("editor-content").addEventListener("input", function() {
+        document.getElementById("editor-content").addEventListener("input", function () {
             updateOutline();
         });
     </script>
