@@ -2,242 +2,579 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <title>{{ title }}</title>
     <script src="js/scorm_12_libs.js"></script>
     <script src="js/SCORM_API_wrapper.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        /* ── Reset ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* ── Переменные ── */
+        :root {
+            --accent:     #2563eb;
+            --accent-dk:  #1d4ed8;
+            --nav-bg:     #101832;
+            --nav-h:      64px;
+            --sidebar-w:  300px;
+            --footer-h:   64px;
+            --radius:     8px;
+            --font:       'Segoe UI', Arial, sans-serif;
+        }
+
+        html, body { height: 100%; }
 
         body {
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-            color: #333;
+            font-family: var(--font);
+            background: #f4f6fb;
+            color: #1e293b;
+            overflow-x: hidden;
         }
 
-        /* Прогресс-бар сверху */
-        #progress-bar {
+        /* ══════════════════════════════
+           ПРОГРЕСС-БАР (под навбаром)
+        ══════════════════════════════ */
+        #progress-wrap {
             position: fixed;
-            top: 0; left: 0;
-            height: 4px;
-            background: #4f46e5;
+            top: var(--nav-h);
+            left: 0; right: 0;
+            height: 6px;
+            background: #dde3f0;
+            z-index: 900;
+        }
+        #progress-fill {
+            height: 100%;
             width: 0%;
-            transition: width 0.3s;
-            z-index: 1000;
+            background: var(--accent);
+            transition: width 0.4s ease;
         }
 
-        /* Шапка */
-        header {
+        /* ══════════════════════════════
+           НАВБАР
+        ══════════════════════════════ */
+        nav {
             position: fixed;
-            top: 4px; left: 0; right: 0;
-            height: 52px;
-            background: #1e1b4b;
+            top: 0; left: 0; right: 0;
+            height: var(--nav-h);
+            background: var(--nav-bg);
             display: flex;
             align-items: center;
-            padding: 0 16px;
-            gap: 12px;
-            z-index: 999;
+            padding: 0 20px;
+            gap: 14px;
+            z-index: 1000;
+            box-shadow: 0 2px 12px rgba(0,0,0,.35);
         }
 
         #menu-btn {
             background: none;
             border: none;
             cursor: pointer;
-            color: white;
-            font-size: 1.4em;
-            line-height: 1;
+            padding: 6px;
+            border-radius: 6px;
+            flex-shrink: 0;
+            transition: background .15s;
         }
+        #menu-btn:hover { background: rgba(255,255,255,.12); }
 
-        #course-title {
-            color: white;
-            font-size: 1em;
-            font-weight: bold;
+        #nav-title {
+            color: #f1f5ff;
+            font-size: 1rem;
+            font-weight: 600;
             flex: 1;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            letter-spacing: .01em;
         }
 
-        /* Боковое меню */
-        #sidebar {
-            position: fixed;
-            top: 0; left: -320px;
-            width: 300px;
-            height: 100vh;
-            background: white;
-            box-shadow: 2px 0 12px rgba(0,0,0,0.15);
-            z-index: 1100;
-            transition: left 0.3s;
-            display: flex;
-            flex-direction: column;
+        #nav-counter {
+            color: #94a3c8;
+            font-size: 0.82rem;
+            white-space: nowrap;
         }
 
-        #sidebar.open { left: 0; }
-
-        #sidebar-header {
-            padding: 20px 16px 12px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #sidebar-header h3 { font-size: 1em; color: #333; }
-
-        #close-sidebar {
-            background: none;
-            border: none;
-            font-size: 1.4em;
-            cursor: pointer;
-            color: #888;
-        }
-
-        #sections-list {
-            overflow-y: auto;
-            flex: 1;
-            padding: 12px 0;
-        }
-
-        .section-item {
-            padding: 10px 16px;
-            cursor: pointer;
-            font-size: 0.9em;
-            color: #555;
-            border-left: 3px solid transparent;
-            transition: all 0.15s;
-        }
-
-        .section-item:hover { background: #f5f4ff; color: #4f46e5; }
-        .section-item.active {
-            border-left-color: #4f46e5;
-            color: #4f46e5;
-            background: #f5f4ff;
-            font-weight: bold;
-        }
-
+        /* ══════════════════════════════
+           БОКОВОЕ МЕНЮ
+        ══════════════════════════════ */
         #overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.4);
-            z-index: 1050;
+            background: rgba(0,0,0,.45);
+            z-index: 1100;
         }
-
         #overlay.show { display: block; }
 
-        /* Основной контент */
-        main {
-            margin-top: 56px;
-            min-height: calc(100vh - 56px - 72px);
+        #sidebar {
+            position: fixed;
+            top: 0; left: calc(-1 * var(--sidebar-w) - 20px);
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: #fff;
+            z-index: 1200;
             display: flex;
-            justify-content: center;
-            padding: 32px 16px, 200px 16px;
+            flex-direction: column;
+            transition: left .28s cubic-bezier(.4,0,.2,1);
+            box-shadow: 4px 0 24px rgba(0,0,0,.18);
+        }
+        #sidebar.open { left: 0; }
+
+        #sidebar-head {
+            padding: 20px 18px 14px;
+            border-bottom: 1px solid #e8edf5;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        #sidebar-head-text { flex: 1; }
+        #sidebar-head-text h3 {
+            font-size: .95rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 10px;
         }
 
-        .section-content {
-            display: none;
-            max-width: 860px;
+        #sidebar-progress-label {
+            font-size: .78rem;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        #sidebar-progress-bar {
             width: 100%;
-            padding-bottom: 80px;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 99px;
+            overflow: hidden;
+        }
+        #sidebar-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--accent);
+            border-radius: 99px;
+            transition: width .4s ease;
         }
 
+        #close-sidebar {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: 1.2rem;
+            padding: 2px;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+        #close-sidebar:hover { color: #475569; }
+
+        #sections-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0 16px;
+        }
+
+        .section-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 18px;
+            cursor: pointer;
+            font-size: .88rem;
+            color: #475569;
+            border-left: 3px solid transparent;
+            transition: all .15s;
+            line-height: 1.4;
+        }
+        .section-item:hover { background: #f0f5ff; color: var(--accent); }
+        .section-item.active {
+            border-left-color: var(--accent);
+            color: var(--accent);
+            background: #eff6ff;
+            font-weight: 600;
+        }
+        .section-item .s-num {
+            flex-shrink: 0;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: #64748b;
+            font-size: .72rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .section-item.active .s-num {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        /* ══════════════════════════════
+           БАННЕР-ОБЛОЖКА
+        ══════════════════════════════ */
+        #course-banner {
+            margin-top: calc(var(--nav-h) + 6px);  /* nav + progress bar */
+            min-height: 240px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+
+        /* SVG-фон: геометрический градиент */
+        #course-banner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(135deg, #0f1f5c 0%, #1e3a8a 40%, #2563eb 75%, #3b82f6 100%);
+            z-index: 0;
+        }
+        /* Декоративные круги */
+        #course-banner::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,.08) 0%, transparent 40%),
+                radial-gradient(circle at 10% 80%, rgba(255,255,255,.06) 0%, transparent 35%),
+                radial-gradient(circle at 55% 110%, rgba(59,130,246,.4) 0%, transparent 50%);
+            z-index: 1;
+        }
+
+        /* Геометрический SVG-паттерн поверх */
+        #banner-pattern {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            opacity: .18;
+        }
+
+        #banner-content {
+            position: relative;
+            z-index: 3;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 32px;
+            width: 100%;
+        }
+
+        #banner-tag {
+            display: inline-block;
+            background: rgba(255,255,255,.18);
+            color: #bfdbfe;
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 99px;
+            margin-bottom: 14px;
+            border: 1px solid rgba(255,255,255,.2);
+        }
+
+        #banner-title {
+            color: #fff;
+            font-size: clamp(1.5rem, 4vw, 2.2rem);
+            font-weight: 800;
+            line-height: 1.25;
+            text-shadow: 0 2px 16px rgba(0,0,0,.3);
+            max-width: 680px;
+        }
+
+        #banner-meta {
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .banner-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #bfdbfe;
+            font-size: .82rem;
+        }
+        .banner-pill svg { width: 14px; height: 14px; opacity: .8; }
+
+        /* ══════════════════════════════
+           ОСНОВНОЙ КОНТЕНТ
+        ══════════════════════════════ */
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 32px 24px calc(var(--footer-h) + 32px);
+        }
+
+        .section-content { display: none; }
         .section-content.active { display: block; }
 
-        /* Типографика */
-        .section-content h1 { font-size: 1.8em; margin: 0.8em 0 0.5em; }
-        .section-content h2 { font-size: 1.4em; margin: 0.8em 0 0.4em; }
-        .section-content h3 { font-size: 1.15em; margin: 0.7em 0 0.3em; }
-        .section-content p  { margin: 0.7em 0; line-height: 1.7; }
-        .section-content img { max-width: 100%; height: auto; margin: 1em 0; display: block; border-radius: 4px; }
-        .section-content table { border-collapse: collapse; width: 100%; margin: 1em 0; }
-        .section-content td, .section-content th { border: 1px solid #ccc; padding: 8px 12px; }
-        .section-content th { background: #f0f0f0; }
-        .section-content ul, .section-content ol { margin: 0.5em 0 0.5em 1.5em; }
-        .section-content li { margin: 0.3em 0; line-height: 1.6; }
-        .section-content a { color: #4f46e5; }
-        .section-content .code-block {
-            font-family: monospace;
-            font-size: 0.9em;
-            background: #f8f8f8;
-            border-left: 3px solid #ccc;
-            padding: 4px 10px;
-            margin: 4px 0;
+        /* Карточка раздела */
+        .section-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.05);
+            padding: 36px 40px;
+            margin-bottom: 24px;
         }
 
-        /* Нижняя навигация */
+        /* Типографика внутри контента */
+        .section-content h1 {
+            font-size: 1.65rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid #e2e8f0;
+            line-height: 1.3;
+        }
+        .section-content h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 1.4em 0 .5em;
+        }
+        .section-content h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #334155;
+            margin: 1.2em 0 .4em;
+        }
+        .section-content p {
+            margin: .7em 0;
+            line-height: 1.75;
+            color: #374151;
+        }
+        .section-content ul, .section-content ol {
+            margin: .6em 0 .6em 1.4em;
+        }
+        .section-content li {
+            margin: .35em 0;
+            line-height: 1.65;
+            color: #374151;
+        }
+        .section-content a { color: var(--accent); text-decoration: underline; }
+        .section-content a:hover { color: var(--accent-dk); }
+
+        .section-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: var(--radius);
+            margin: 1.2em 0;
+            display: block;
+            box-shadow: 0 2px 12px rgba(0,0,0,.1);
+        }
+        .section-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1.2em 0;
+            font-size: .92rem;
+        }
+        .section-content td, .section-content th {
+            border: 1px solid #e2e8f0;
+            padding: 10px 14px;
+            text-align: left;
+        }
+        .section-content th {
+            background: #f8fafc;
+            font-weight: 700;
+            color: #475569;
+        }
+        .section-content tr:nth-child(even) td { background: #fafbfe; }
+
+        .section-content .code-block {
+            font-family: 'Courier New', monospace;
+            font-size: .88em;
+            background: #f1f5f9;
+            border-left: 3px solid var(--accent);
+            padding: 8px 14px;
+            margin: .5em 0;
+            border-radius: 0 6px 6px 0;
+            color: #334155;
+        }
+
+        /* ══════════════════════════════
+           НИЖНЯЯ НАВИГАЦИЯ
+        ══════════════════════════════ */
         footer {
             position: fixed;
             bottom: 0; left: 0; right: 0;
-            height: 60px;
-            background: white;
-            border-top: 1px solid #e5e5e5;
+            height: var(--footer-h);
+            background: #fff;
+            border-top: 1px solid #e2e8f0;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 24px;
-            z-index: 999;
+            padding: 0 28px;
+            z-index: 900;
+            box-shadow: 0 -2px 12px rgba(0,0,0,.06);
         }
 
         .nav-btn {
-            background: #4f46e5;
-            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--accent);
+            color: #fff;
             border: none;
-            padding: 10px 24px;
-            border-radius: 8px;
-            font-size: 0.95em;
+            padding: 10px 22px;
+            border-radius: var(--radius);
+            font-size: .92rem;
+            font-weight: 600;
             cursor: pointer;
+            transition: background .15s, transform .1s, box-shadow .15s;
+            box-shadow: 0 2px 8px rgba(37,99,235,.25);
         }
-
-        .nav-btn:hover { background: #4338ca; }
+        .nav-btn:hover:not(:disabled) {
+            background: var(--accent-dk);
+            box-shadow: 0 4px 14px rgba(37,99,235,.35);
+            transform: translateY(-1px);
+        }
         .nav-btn:disabled {
-          background: #ccc;
-          cursor: default;
-          opacity: 0.6;
+            background: #cbd5e1;
+            box-shadow: none;
+            cursor: default;
+            transform: none;
         }
-        .nav-btn.finish { background: #16a34a; }
-        .nav-btn.finish:hover { background: #15803d; }
+        .nav-btn.finish { background: #16a34a; box-shadow: 0 2px 8px rgba(22,163,74,.25); }
+        .nav-btn.finish:hover:not(:disabled) {
+            background: #15803d;
+            box-shadow: 0 4px 14px rgba(22,163,74,.35);
+        }
 
-        #section-counter {
-            font-size: 0.9em;
-            color: #888;
+        #footer-counter {
+            font-size: .85rem;
+            color: #94a3b8;
+            font-weight: 500;
         }
+
+        /* ══════════════════════════════
+           SCORM-лоадер (опционально)
+        ══════════════════════════════ */
+        #scorm-loader {
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        #scorm-loader.hidden { display: none; }
+        .loader-box {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px 32px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 8px 32px rgba(0,0,0,.2);
+        }
+        .loader-spinner {
+            width: 24px; height: 24px;
+            border: 3px solid #e2e8f0;
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+        .loader-text { font-size: .92rem; color: #475569; font-weight: 500; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div id="progress-bar"></div>
+<!-- SCORM лоадер -->
+<div id="scorm-loader">
+    <div class="loader-box">
+        <div class="loader-spinner"></div>
+        <span class="loader-text">Загрузка курса…</span>
+    </div>
+</div>
 
-<header>
-    <button id="menu-btn">☰</button>
-    <span id="course-title">{{ title }}</span>
-</header>
+<!-- Навбар -->
+<nav>
+    <button id="menu-btn" aria-label="Открыть меню">
+        <svg width="22" height="16" viewBox="0 0 22 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="22" height="3" rx="1.5" fill="#f1f5ff"/>
+            <rect y="6.5" width="22" height="3" rx="1.5" fill="#f1f5ff"/>
+            <rect y="13" width="22" height="3" rx="1.5" fill="#f1f5ff"/>
+        </svg>
+    </button>
+    <span id="nav-title">{{ title }}</span>
+    <span id="nav-counter"></span>
+</nav>
 
-<!-- Боковое меню -->
+<!-- Прогресс-бар -->
+<div id="progress-wrap"><div id="progress-fill"></div></div>
+
+<!-- Оверлей + боковое меню -->
 <div id="overlay"></div>
 <div id="sidebar">
-    <div id="sidebar-header">
-        <h3>Содержание</h3>
-        <button id="close-sidebar">✕</button>
+    <div id="sidebar-head">
+        <div id="sidebar-head-text">
+            <h3>Содержание</h3>
+            <div id="sidebar-progress-label">0% пройдено</div>
+            <div id="sidebar-progress-bar">
+                <div id="sidebar-progress-fill"></div>
+            </div>
+        </div>
+        <button id="close-sidebar" aria-label="Закрыть меню">✕</button>
     </div>
     <div id="sections-list">
         {% for section in sections %}
-        <div class="section-item {% if loop.first %}active{% endif %}"
-             data-index="{{ loop.index0 }}">
-            {{ loop.index }}. {{ section.title }}
+        <div class="section-item {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
+            <span class="s-num">{{ loop.index }}</span>
+            <span>{{ section.title }}</span>
         </div>
         {% endfor %}
+    </div>
+</div>
+
+<!-- Баннер-обложка -->
+<div id="course-banner">
+    <!-- Геометрический SVG-паттерн -->
+    <svg id="banner-pattern" viewBox="0 0 900 240" preserveAspectRatio="xMidYMid slice"
+         xmlns="http://www.w3.org/2000/svg">
+        <circle cx="820" cy="40"  r="110" fill="white"/>
+        <circle cx="760" cy="200" r="70"  fill="white"/>
+        <circle cx="60"  cy="200" r="90"  fill="white"/>
+        <circle cx="140" cy="20"  r="55"  fill="white"/>
+        <polygon points="450,0 520,80 380,80"  fill="white"/>
+        <polygon points="200,240 260,140 320,240" fill="white"/>
+        <polygon points="650,240 710,150 770,240" fill="white"/>
+        <rect x="380" y="160" width="60" height="60" rx="8" fill="white" transform="rotate(20,410,190)"/>
+        <rect x="100"  y="80" width="40" height="40" rx="6" fill="white" transform="rotate(-15,120,100)"/>
+    </svg>
+
+    <div id="banner-content">
+        <div id="banner-tag">Учебный курс</div>
+        <h1 id="banner-title">{{ title }}</h1>
+        <div id="banner-meta">
+            <span class="banner-pill">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                {{ sections | length }} раздел{% if sections | length == 1 %}{% elif sections | length < 5 %}а{% else %}ов{% endif %}
+            </span>
+            <span class="banner-pill">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                </svg>
+                SCORM 1.2
+            </span>
+        </div>
     </div>
 </div>
 
 <!-- Контент разделов -->
 <main>
     {% for section in sections %}
-    <!-- стало -->
-    <div class="section-content {% if loop.first %}active{% endif %}"
-        id="section-{{ loop.index0 }}">
-    <!--SECTION_START_{{ loop.index0 }}-->
+    <div class="section-content {% if loop.first %}active{% endif %}" id="section-{{ loop.index0 }}">
 
-        {# Макрос для рендеринга run #}
+        {# Макрос рендеринга run #}
         {% macro render_run(run) %}
           {%- if run.highlight %}<mark style="background:{{ run.highlight }}">{% endif -%}
           {%- if run.link %}<a href="{{ run.link | e }}" target="_blank">{% endif -%}
@@ -256,89 +593,97 @@
 
         {% set ns = namespace(in_ul=false, in_ol=false) %}
 
-        {# Заголовок раздела #}
-        <h1>{{ section.title }}</h1>
+        <div class="section-card">
+            <h1>{{ section.title }}</h1>
 
-        {% for element in section.elements %}
+            {% for element in section.elements %}
 
-          {% if element.type.value != "list_item" %}
-            {% if ns.in_ul %}</ul>{% set ns.in_ul = false %}{% endif %}
-            {% if ns.in_ol %}</ol>{% set ns.in_ol = false %}{% endif %}
-          {% endif %}
-
-          {% if element.type.value == "heading" %}
-            <h{{ element.level }}>{{ element.text | e }}</h{{ element.level }}>
-
-          {% elif element.type.value == "paragraph" %}
-            {% set align = element.alignment.value if element.alignment else "left" %}
-            {% if element.background %}
-              <p class="code-block" style="text-align:{{ align }}">
-            {% else %}
-              <p style="text-align:{{ align }}">
-            {% endif %}
-              {% for run in element.runs %}{{ render_run(run) }}{% endfor %}
-            </p>
-
-          {% elif element.type.value == "list_item" %}
-            {% if element.ordered %}
-              {% if not ns.in_ol %}
+              {% if element.type.value != "list_item" %}
                 {% if ns.in_ul %}</ul>{% set ns.in_ul = false %}{% endif %}
-                <ol>{% set ns.in_ol = true %}
-              {% endif %}
-            {% else %}
-              {% if not ns.in_ul %}
                 {% if ns.in_ol %}</ol>{% set ns.in_ol = false %}{% endif %}
-                <ul>{% set ns.in_ul = true %}
               {% endif %}
-            {% endif %}
-            <li>{% for run in element.runs %}{{ render_run(run) }}{% endfor %}</li>
 
-          {% elif element.type.value == "image" %}
-            <img src="images/{{ element.filename }}" alt="Изображение">
-            {% if element.caption %}<p style="text-align:center;color:#666;font-size:0.9em">{{ element.caption | e }}</p>{% endif %}
+              {% if element.type.value == "heading" %}
+                <h{{ element.level }}>{{ element.text | e }}</h{{ element.level }}>
 
-          {% elif element.type.value == "table" %}
-            <table>
-              {% for row in element.rows %}
-              <tr>{% for cell in row.cells %}<td>{{ cell.text | e }}</td>{% endfor %}</tr>
-              {% endfor %}
-            </table>
+              {% elif element.type.value == "paragraph" %}
+                {% set align = element.alignment.value if element.alignment else "left" %}
+                {% if element.background %}
+                  <p class="code-block" style="text-align:{{ align }}">
+                {% else %}
+                  <p style="text-align:{{ align }}">
+                {% endif %}
+                  {% for run in element.runs %}{{ render_run(run) }}{% endfor %}
+                </p>
 
-          {% endif %}
+              {% elif element.type.value == "list_item" %}
+                {% if element.ordered %}
+                  {% if not ns.in_ol %}
+                    {% if ns.in_ul %}</ul>{% set ns.in_ul = false %}{% endif %}
+                    <ol>{% set ns.in_ol = true %}
+                  {% endif %}
+                {% else %}
+                  {% if not ns.in_ul %}
+                    {% if ns.in_ol %}</ol>{% set ns.in_ol = false %}{% endif %}
+                    <ul>{% set ns.in_ul = true %}
+                  {% endif %}
+                {% endif %}
+                <li>{% for run in element.runs %}{{ render_run(run) }}{% endfor %}</li>
 
-        {% endfor %}
+              {% elif element.type.value == "image" %}
+                <img src="images/{{ element.filename }}" alt="Изображение">
+                {% if element.caption %}<p style="text-align:center;color:#64748b;font-size:.88em;margin-top:-.5em">{{ element.caption | e }}</p>{% endif %}
 
-        {% if ns.in_ul %}</ul>{% endif %}
-        {% if ns.in_ol %}</ol>{% endif %}
+              {% elif element.type.value == "table" %}
+                <table>
+                  {% for row in element.rows %}
+                  <tr>{% for cell in row.cells %}<td>{{ cell.text | e }}</td>{% endfor %}</tr>
+                  {% endfor %}
+                </table>
 
-    <!--SECTION_END_{{ loop.index0 }}-->
-    </div>
+              {% endif %}
+
+            {% endfor %}
+
+            {% if ns.in_ul %}</ul>{% endif %}
+            {% if ns.in_ol %}</ol>{% endif %}
+        </div><!-- /.section-card -->
+
+    </div><!-- /.section-content -->
     {% endfor %}
 </main>
 
 <!-- Нижняя навигация -->
 <footer>
     <button class="nav-btn" id="btn-prev" disabled>← Назад</button>
-    <span id="section-counter"></span>
+    <span id="footer-counter"></span>
     <button class="nav-btn" id="btn-next">Далее →</button>
 </footer>
 
 <script>
     const totalSections = {{ sections | length }};
     let current = 0;
-
-    // SCORM init
     var scormReady = false;
-    window.onload = function() {
-        var result = SCORM_12.LMSInitialize("");
-        if (result === "true") scormReady = true;
+
+    // ── SCORM init ──
+    window.onload = function () {
+        try {
+            var res = SCORM_12.LMSInitialize("");
+            if (res === "true") scormReady = true;
+        } catch (e) {
+            // SCORM API недоступен (открыто вне LMS)
+            console.warn("SCORM API не найден:", e);
+        }
+        // Лоадер убирается в любом случае
+        document.getElementById("scorm-loader").classList.add("hidden");
         updateUI();
     };
-
-    window.onunload = function() {
-        if (scormReady) SCORM_12.LMSFinish("");
+    window.onunload = function () {
+        try {
+            if (scormReady) SCORM_12.LMSFinish("");
+        } catch (e) {}
     };
-
+    // ── Навигация ──
     function goTo(index) {
         document.querySelectorAll(".section-content").forEach(el => el.classList.remove("active"));
         document.querySelectorAll(".section-item").forEach(el => el.classList.remove("active"));
@@ -346,69 +691,74 @@
         document.querySelector(".section-item[data-index='" + index + "']").classList.add("active");
         current = index;
         updateUI();
-        window.scrollTo(0, 0);
+        window.scrollTo({ top: 0, behavior: "smooth" });
         closeSidebar();
     }
 
     function updateUI() {
-      const progress = Math.round(((current + 1) / totalSections) * 100);
-      document.getElementById("progress-bar").style.width = progress + "%";
-      document.getElementById("section-counter").textContent =
-          "Раздел " + (current + 1) + " из " + totalSections;
+        const pct = Math.round(((current + 1) / totalSections) * 100);
 
-      // ← исправлено: явно ставим и снимаем disabled
-      const prevBtn = document.getElementById("btn-prev");
-      prevBtn.disabled = current === 0;
+        // Прогресс-бар под навбаром
+        document.getElementById("progress-fill").style.width = pct + "%";
 
-      const nextBtn = document.getElementById("btn-next");
-      if (current === totalSections - 1) {
-          nextBtn.textContent = "Завершить ✓";
-          nextBtn.classList.add("finish");
-      } else {
-          nextBtn.textContent = "Далее →";
-          nextBtn.classList.remove("finish");
-      }
-      nextBtn.disabled = false;
+        // Прогресс в боковом меню
+        document.getElementById("sidebar-progress-fill").style.width = pct + "%";
+        document.getElementById("sidebar-progress-label").textContent = pct + "% пройдено";
+
+        // Счётчик в навбаре и футере
+        const label = "Раздел " + (current + 1) + " из " + totalSections;
+        document.getElementById("nav-counter").textContent = label;
+        document.getElementById("footer-counter").textContent = label;
+
+        // Кнопки
+        document.getElementById("btn-prev").disabled = current === 0;
+
+        const next = document.getElementById("btn-next");
+        if (current === totalSections - 1) {
+            next.textContent = "Завершить ✓";
+            next.classList.add("finish");
+        } else {
+            next.textContent = "Далее →";
+            next.classList.remove("finish");
+        }
+        next.disabled = false;
     }
 
-    document.getElementById("btn-prev").onclick = function() {
+    document.getElementById("btn-prev").onclick = function () {
         if (current > 0) goTo(current - 1);
     };
-
-    document.getElementById("btn-next").onclick = function() {
+    document.getElementById("btn-next").onclick = function () {
         if (current < totalSections - 1) {
             goTo(current + 1);
         } else {
-            // Последний раздел — завершаем курс
             if (scormReady) {
-                SCORM_12.LMSSetValue("cmi.core.lesson_status", "passed");
-                SCORM_12.LMSCommit("");
-                SCORM_12.LMSFinish("");
-                scormReady = false;
+                try {
+                    SCORM_12.LMSSetValue("cmi.core.lesson_status", "passed");
+                    SCORM_12.LMSCommit("");
+                    SCORM_12.LMSFinish("");
+                    scormReady = false;
+                } catch (e) {}
             }
-            document.getElementById("btn-next").textContent = "Пройдено ✓";
-            document.getElementById("btn-next").disabled = true;
+            const btn = document.getElementById("btn-next");
+            btn.textContent = "Пройдено ✓";
+            btn.disabled = true;
         }
     };
 
-    // Боковое меню
-    document.getElementById("menu-btn").onclick = function() {
+    // ── Боковое меню ──
+    document.getElementById("menu-btn").onclick = function () {
         document.getElementById("sidebar").classList.add("open");
         document.getElementById("overlay").classList.add("show");
     };
-
     function closeSidebar() {
         document.getElementById("sidebar").classList.remove("open");
         document.getElementById("overlay").classList.remove("show");
     }
-
     document.getElementById("close-sidebar").onclick = closeSidebar;
     document.getElementById("overlay").onclick = closeSidebar;
 
-    document.querySelectorAll(".section-item").forEach(function(item) {
-        item.onclick = function() {
-            goTo(parseInt(this.dataset.index));
-        };
+    document.querySelectorAll(".section-item").forEach(function (item) {
+        item.onclick = function () { goTo(parseInt(this.dataset.index)); };
     });
 </script>
 </body>
