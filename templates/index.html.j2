@@ -690,6 +690,7 @@
 <main>
     {% for section in sections %}
     <div class="section-content {% if loop.first %}active{% endif %}" id="section-{{ loop.index0 }}">
+        <!--SECTION_START_{{ loop.index0 }}-->
 
         {# Макрос рендеринга run #}
         {% macro render_run(run) %}
@@ -820,6 +821,7 @@
             </div>
             {% endif %}
         </div><!-- /.section-card -->
+        <!--SECTION_END_{{ loop.index0 }}-->
 
     </div><!-- /.section-content -->
     {% endfor %}

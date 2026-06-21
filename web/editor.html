@@ -279,6 +279,102 @@
             border-top: 2px solid #e5e7eb;
             margin: 1.5em 0;
         }
+
+        .section-content .code-block {
+            font-family: 'Courier New', monospace;
+            font-size: .88em;
+            background: #f1f5f9;
+            border-left: 3px solid #2563eb;
+            padding: 8px 14px;
+            margin: .5em 0;
+            border-radius: 0 6px 6px 0;
+            color: #334155;
+        }
+
+        ul.styled-list {
+            list-style: none !important;
+            margin: 1em 0;
+            padding: 0;
+        }
+        .styled-list-item {
+            list-style: none !important;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin: 0.9em 0;
+        }
+        .styled-list-num {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #2563eb;
+            color: #fff;
+            font-size: .85rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 0.1em;
+        }
+        .styled-list-text {
+            flex: 1;
+            line-height: 1.65;
+            color: #374151;
+            padding-top: 0.15em;
+        }
+        .styled-list-text p { margin: 0; }
+
+        ul.plain-list { list-style: disc; margin-left: 1.4em; }
+
+        .steps-block {
+            margin: 1.5em 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .step-item { border-bottom: 1px solid #e2e8f0; }
+        .step-item:last-child { border-bottom: none; }
+
+        .step-header {
+            width: 100%;
+            background: #f8fafc;
+            border: none;
+            cursor: pointer;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: .95rem;
+            font-weight: 700;
+            color: #1e293b;
+            text-align: left;
+            font-family: inherit;
+        }
+        .step-header.active { background: #eff6ff; color: #2563eb; }
+
+        .step-header-title { flex: 1; }
+
+        .step-chevron {
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            transition: transform .25s ease;
+            color: #94a3b8;
+        }
+        .step-header.active .step-chevron {
+            transform: rotate(180deg);
+            color: #2563eb;
+        }
+
+        .step-panel {
+            max-height: none;
+            overflow: visible;
+            background: #fff;
+        }
+        .step-panel-inner { padding: 4px 20px 20px; }
+
+        .step-chevron { pointer-events: none; }
     </style>
 </head>
 
