@@ -33,6 +33,82 @@ HIGHLIGHT_COLOR_MAP = {
     "GRAY_25": "#C0C0C0",
 }
 
+# numFmt-значения OOXML, которые считаем "нумерованными" (не маркерами).
+# Полный список форматов нумерации: bullet, decimal, decimalZero, upperRoman,
+# lowerRoman, upperLetter, lowerLetter, ordinal, cardinalText, ordinalText, none, ...
+# Всё, что не "bullet"/"none", в учебных документах почти всегда нумерованный список.
+ORDERED_NUM_FORMATS = {
+    "decimal", "decimalZero", "upperRoman", "lowerRoman",
+    "upperLetter", "lowerLetter", "ordinal", "ordinalText", "cardinalText",
+}
+
+
+def _build_numfmt_map(doc) -> dict[str, str]:
+    """
+    Строит словарь numId -> numFmt (например "11" -> "bullet", "13" -> "decimal"),
+    читая word/numbering.xml. numFmt берётся с уровня 0 (ilvl=0), так как
+    наши списки в учебных документах не используют многоуровневую нумерацию.
+
+    Возвращает {} если в документе вообще нет numbering.xml (списков нет).
+    """
+    numfmt_by_numid: dict[str, str] = {}
+
+    numbering_part = None
+    try:
+        numbering_part = doc.part.numbering_part
+    except Exception:
+        return numfmt_by_numid
+
+    if numbering_part is None:
+        return numfmt_by_numid
+
+    root = numbering_part.element
+
+    # 1) numId -> abstractNumId
+    numid_to_abstract: dict[str, str] = {}
+    for num_el in root.findall(qn("w:num")):
+        num_id = num_el.get(qn("w:numId"))
+        abstract_el = num_el.find(qn("w:abstractNumId"))
+        if num_id is not None and abstract_el is not None:
+            abstract_id = abstract_el.get(qn("w:val"))
+            numid_to_abstract[num_id] = abstract_id
+
+    # 2) abstractNumId -> numFmt (на уровне ilvl=0)
+    abstract_to_fmt: dict[str, str] = {}
+    for abs_el in root.findall(qn("w:abstractNum")):
+        abs_id = abs_el.get(qn("w:abstractNumId"))
+        if abs_id is None:
+            continue
+        for lvl_el in abs_el.findall(qn("w:lvl")):
+            ilvl = lvl_el.get(qn("w:ilvl"))
+            if ilvl == "0":
+                fmt_el = lvl_el.find(qn("w:numFmt"))
+                if fmt_el is not None:
+                    abstract_to_fmt[abs_id] = fmt_el.get(qn("w:val"))
+                break
+
+    # 3) Собираем итоговую карту numId -> numFmt
+    for num_id, abs_id in numid_to_abstract.items():
+        fmt = abstract_to_fmt.get(abs_id)
+        if fmt:
+            numfmt_by_numid[num_id] = fmt
+
+    return numfmt_by_numid
+
+
+def _get_num_id(para) -> str | None:
+    """Возвращает numId параграфа (ссылку на список нумерации), если он есть."""
+    pPr = para._p.find(qn("w:pPr"))
+    if pPr is None:
+        return None
+    numPr = pPr.find(qn("w:numPr"))
+    if numPr is None:
+        return None
+    numid_el = numPr.find(qn("w:numId"))
+    if numid_el is None:
+        return None
+    return numid_el.get(qn("w:val"))
+
 
 def _parse_runs(para) -> list[RunSegment]:
     segments = []
@@ -134,14 +210,39 @@ def _has_image(para) -> bool:
 
 
 def _is_list_item(para) -> bool:
-    return "List" in para.style.name
+    """
+    Определяет, является ли параграф элементом списка.
+    Раньше проверялось только имя стиля ("List" in style.name), но это
+    срабатывает и для bullet-, и для number-списков одинаково — стиль
+    у обоих называется "List Paragraph". Дополнительно проверяем наличие
+    реальной numPr-привязки (w:numPr), что надёжнее.
+    """
+    if "List" in para.style.name:
+        return True
+    return _get_num_id(para) is not None
 
 
-def _is_ordered_list(para) -> bool:
-    return "Number" in para.style.name
+def _is_ordered_list(para, numfmt_by_numid: dict[str, str]) -> bool:
+    """
+    Определяет, нумерованный ли список (1.,2.,3. / a.,b. / i.,ii. ...)
+    или маркированный (•, -, ▪ ...).
+
+    Раньше проверялось "Number" in style.name — это никогда не срабатывало,
+    так как у Word'а стиль абзаца для ЛЮБОГО списка называется "List Paragraph"
+    независимо от того, маркеры там или цифры. Реальное различие хранится
+    в word/numbering.xml: каждому numId соответствует numFmt уровня 0
+    ("bullet" для маркеров, "decimal"/"upperRoman"/... для нумерации).
+    """
+    num_id = _get_num_id(para)
+    if num_id is None:
+        return False
+    fmt = numfmt_by_numid.get(num_id)
+    if fmt is None:
+        return False
+    return fmt in ORDERED_NUM_FORMATS
 
 
-def _parse_paragraph(para, doc, result, image_counter, used_image_rids):
+def _parse_paragraph(para, doc, result, image_counter, used_image_rids, numfmt_by_numid):
     """Обрабатывает один параграф и добавляет элемент в result. Возвращает обновлённый image_counter."""
     style = para.style.name
     text = para.text.strip()
@@ -180,7 +281,7 @@ def _parse_paragraph(para, doc, result, image_counter, used_image_rids):
         if runs:
             result.elements.append(ListItem(
                 runs=runs,
-                ordered=_is_ordered_list(para),
+                ordered=_is_ordered_list(para, numfmt_by_numid),
             ))
 
     else:
@@ -212,6 +313,10 @@ def parse_docx(file_path: str) -> ParsedDocument:
     image_counter = 1
     used_image_rids = set()
 
+    # Карта numId -> numFmt, нужна, чтобы отличить нумерованные списки
+    # от маркированных (у обоих стиль абзаца "List Paragraph").
+    numfmt_by_numid = _build_numfmt_map(doc)
+
     # Строим словарь: XML элемент → объект параграфа
     # чтобы не создавать DocxParagraph вручную
     para_map = {p._element: p for p in doc.paragraphs}
@@ -225,7 +330,7 @@ def parse_docx(file_path: str) -> ParsedDocument:
         if tag == "p" and child in para_map:
             para = para_map[child]
             image_counter = _parse_paragraph(
-                para, doc, result, image_counter, used_image_rids
+                para, doc, result, image_counter, used_image_rids, numfmt_by_numid
             )
 
         elif tag == "tbl" and child in table_map:
