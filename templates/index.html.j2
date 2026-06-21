@@ -803,15 +803,14 @@
             <div class="steps-block">
                 {% for step in steps %}
                 <div class="step-item">
-                    <button class="step-header {% if loop.first %}active{% endif %}"
+                    <button class="step-header"
                             onclick="toggleStep(this)">
-                        <span class="step-num-badge">{{ loop.index }}</span>
                         <span class="step-header-title">{{ step.title }}</span>
                         <svg class="step-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M6 9l6 6 6-6"/>
                         </svg>
                     </button>
-                    <div class="step-panel {% if loop.first %}open{% endif %}">
+                    <div class="step-panel">
                         <div class="step-panel-inner">
                             {{ render_elements(step.elements) }}
                         </div>

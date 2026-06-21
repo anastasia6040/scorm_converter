@@ -9,6 +9,7 @@ from app.generator.html_generator import generate_html
 from app.generator.manifest_generator import generate_manifest
 from app.packager.scorm_packager import pack_scorm
 from app.database import db, Conversion, CourseMetadata
+from app.filename_utils import safe_download_filename
 
 bp = Blueprint("main", __name__)
 
@@ -167,7 +168,7 @@ def finalize():
     return send_file(
         output_path,
         as_attachment=True,
-        download_name="scorm_package.zip",
+        download_name=safe_download_filename(title),
         mimetype="application/zip",
     )
 
@@ -198,7 +199,7 @@ def download_history(conversion_id):
         flash("Файл был удалён с сервера")
         return redirect(url_for("main.history"))
 
-    download_name = f"{conversion.document_title or 'scorm'}_package.zip"
+    download_name = safe_download_filename(conversion.document_title or "scorm")
 
     return send_file(
         file_path,
@@ -303,10 +304,17 @@ def download_file(session_id):
     if not os.path.exists(output_path):
         flash("Файл не найден")
         return redirect(url_for("main.index"))
+
+    conversion = Conversion.query.filter_by(
+        output_filename=f"{session_id}.zip",
+        user_id=current_user.id,
+    ).first()
+    title = conversion.document_title if conversion else "scorm"
+
     return send_file(
         output_path,
         as_attachment=True,
-        download_name="scorm_package.zip",
+        download_name=safe_download_filename(title),
         mimetype="application/zip",
     )
 
