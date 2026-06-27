@@ -142,9 +142,9 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 1024px;        /* фиксированная ширина как у обычного экрана */
-            height: 768px;        /* фиксированная высота */
-            transform: scale(0.33);  /* уменьшаем до четверти */
+            width: 1024px;
+            height: 768px;
+            transform: scale(0.33);
             transform-origin: top left;
             pointer-events: none;
             border: none;
@@ -179,7 +179,6 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
-        /* Плейсхолдер если нет превью */
         .preview-placeholder {
             display: flex;
             flex-direction: column;
@@ -343,7 +342,6 @@
 
         .btn-primary:hover { background: #4338ca; }
 
-        /* Модалка подтверждения удаления */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -438,7 +436,6 @@
         {% for c in conversions %}
         <div class="course-card">
 
-            <!-- Превью -->
             <div class="course-preview"
                  onclick="window.open('/preview/{{ c.id }}', '_blank')">
                 {% if c.status == "success" and c.output_filename %}
@@ -457,7 +454,6 @@
                 {% endif %}
             </div>
 
-            <!-- Информация -->
             <div class="course-info">
                 <div class="course-title"
                      title="{{ c.document_title or c.original_filename }}">
@@ -469,13 +465,11 @@
                 </div>
             </div>
 
-            <!-- Футер карточки -->
             <div class="course-footer">
                 <span class="course-status {{ c.status }}">
                     {% if c.status == "success" %}Готов{% else %}Ошибка{% endif %}
                 </span>
 
-                <!-- Три точки -->
                 <div class="menu-wrap">
                     <button class="menu-btn" onclick="toggleMenu({{ c.id }}, event)">
                         •••
@@ -519,7 +513,6 @@
     {% endif %}
 </div>
 
-<!-- Модалка подтверждения удаления -->
 <div class="modal-overlay" id="delete-modal">
     <div class="modal">
         <h3>Удалить курс?</h3>
@@ -534,22 +527,18 @@
 </div>
 
 <script>
-    // Меню трёх точек
     function toggleMenu(id, event) {
         event.stopPropagation();
         const menu = document.getElementById("menu-" + id);
         const isOpen = menu.classList.contains("open");
-        // Закрываем все меню
         document.querySelectorAll(".dropdown").forEach(m => m.classList.remove("open"));
         if (!isOpen) menu.classList.add("open");
     }
 
-    // Закрывать меню при клике вне
     document.addEventListener("click", function() {
         document.querySelectorAll(".dropdown").forEach(m => m.classList.remove("open"));
     });
 
-    // Модалка удаления
     function confirmDelete(id, title) {
         document.getElementById("delete-modal-text").textContent =
             `Курс "${title}" будет удалён безвозвратно.`;
@@ -562,7 +551,6 @@
         document.getElementById("delete-modal").classList.remove("open");
     }
 
-    // Закрывать модалку по клику на фон
     document.getElementById("delete-modal").addEventListener("click", function(e) {
         if (e.target === this) closeModal();
     });

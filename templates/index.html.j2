@@ -32,7 +32,7 @@
         }
 
         /* ══════════════════════════════
-           ПРОГРЕСС-БАР (под навбаром)
+           ПРОГРЕСС-БАР
         ══════════════════════════════ */
         #progress-wrap {
             position: fixed;
@@ -395,7 +395,7 @@
             color: #334155;
         }
 
-        /* ── Цветные нумерованные списки (кружки + текст) ── */
+        /* ── Цветные нумерованные списки ── */
         ul.styled-list {
             list-style: none !important;
             margin: 1em 0;
@@ -431,11 +431,10 @@
         }
         .styled-list-text p { margin: 0; }
 
-        /* Обычный маркированный список (как и был, через .item ul в общем css,
-           но дублируем тут на случай отсутствия внешних стилей) */
+        /* Обычный маркированный список */
         .section-content ul.plain-list { list-style: disc; margin-left: 1.4em; }
 
-        /* ── Шаги (аккордеон) ── */
+        /* ── Шаги ── */
         .steps-block {
             margin: 1.5em 0;
             border: 1px solid #e2e8f0;
@@ -568,7 +567,7 @@
         }
 
         /* ══════════════════════════════
-           SCORM-лоадер (опционально)
+           SCORM-лоадер
         ══════════════════════════════ */
         #scorm-loader {
             position: fixed;
@@ -709,10 +708,6 @@
           {%- if run.highlight %}</mark>{% endif -%}
         {% endmacro %}
 
-        {# Рендерит плоский список элементов (без H1/H2 группировки) —
-           параграфы, списки (с цветными кружками для нумерованных),
-           картинки, таблицы. Используется и для "обычного" раздела,
-           и внутри каждого отдельного шага. #}
         {% macro render_elements(elements) %}
           {% set ns = namespace(in_ul=false, in_ol=false, ol_counter=0) %}
           {% for element in elements %}
@@ -737,7 +732,6 @@
 
             {% elif element.type.value == "list_item" %}
               {% if element.ordered %}
-                {# Нумерованный список → цветные кружки с номером #}
                 {% if not ns.in_ol %}
                   {% if ns.in_ul %}</ul>{% set ns.in_ul = false %}{% endif %}
                   <ul class="styled-list">{% set ns.in_ol = true %}{% set ns.ol_counter = 0 %}
@@ -748,7 +742,6 @@
                   <span class="styled-list-text">{% for run in element.runs %}{{ render_run(run) }}{% endfor %}</span>
                 </li>
               {% else %}
-                {# Маркированный список → обычный bullet-список #}
                 {% if not ns.in_ul %}
                   {% if ns.in_ol %}</ul>{% set ns.in_ol = false %}{% set ns.ol_counter = 0 %}{% endif %}
                   <ul class="plain-list">{% set ns.in_ul = true %}
@@ -775,9 +768,6 @@
           {% if ns.in_ol %}</ul>{% endif %}
         {% endmacro %}
 
-        {# Группируем элементы раздела: если встречается H2, всё, что идёт
-           после него (до следующего H2 или конца раздела), считается
-           содержимым "шага". Элементы до первого H2 рендерятся как обычно. #}
         {% set pre_elements = [] %}
         {% set steps = [] %}
         {% set ns2 = namespace(current_step=none) %}
@@ -797,7 +787,6 @@
         <div class="section-card">
             <h1>{{ section.title }}</h1>
 
-            {# Контент до первого шага (если есть) рендерится как обычно #}
             {{ render_elements(pre_elements) }}
 
             {% if steps %}
@@ -932,7 +921,6 @@
         item.onclick = function () { goTo(parseInt(this.dataset.index)); };
     });
 
-    // ── Аккордеон шагов: открытие/закрытие независимо друг от друга ──
     function toggleStep(btn) {
         const item  = btn.closest(".step-item");
         const panel = item.querySelector(".step-panel");

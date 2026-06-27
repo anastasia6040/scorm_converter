@@ -101,7 +101,6 @@
             background: #4338ca;
         }
 
-        /* Панель инструментов */
         .toolbar {
             background: white;
             border-bottom: 1px solid #ede9fe;
@@ -146,14 +145,12 @@
             margin: 0 4px;
         }
 
-        /* Основная область */
         .editor-wrap {
             flex: 1;
             display: flex;
             overflow: hidden;
         }
 
-        /* Область редактирования */
         .editor-area {
             flex: 1;
             overflow-y: auto;
@@ -174,7 +171,6 @@
             outline: none;
         }
 
-        /* Стили для редактируемого контента */
         #editor-content h1 {
             font-size: 1.8em;
             margin: 0.8em 0 0.4em;
@@ -223,7 +219,6 @@
             color: #4f46e5;
         }
 
-        /* Боковая панель */
         .sidebar {
             width: 220px;
             background: #faf9ff;
@@ -380,7 +375,6 @@
 
 <body>
 
-    <!-- Шапка -->
     <nav>
         <div class="nav-left">
             <a class="nav-back" href="/history">← Мои курсы</a>
@@ -392,7 +386,6 @@
         </div>
     </nav>
 
-    <!-- Панель инструментов -->
     <div class="toolbar">
         <button class="tool-btn" onclick="format('bold')" title="Жирный"><strong>Ж</strong></button>
         <button class="tool-btn" onclick="format('italic')" title="Курсив"><em>К</em></button>
@@ -456,17 +449,13 @@
         <button class="tool-btn" onclick="format('redo')">↪ Повторить</button>
     </div>
 
-    <!-- Основная область -->
     <div class="editor-wrap">
 
-        <!-- Редактор -->
         <div class="editor-area">
             <div id="editor-content" contenteditable="true">
-                <!-- Контент вставляется через JS -->
             </div>
         </div>
 
-        <!-- Боковая панель -->
         <div class="sidebar">
             <div class="sidebar-section">
                 <h3>Разделы</h3>

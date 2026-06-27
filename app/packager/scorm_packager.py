@@ -17,7 +17,6 @@ def pack_scorm(
         for filename, data in images.items():
             zf.writestr(f"images/{filename}", data)
 
-        # XSD схемы в корень архива
         if os.path.isdir(xsd_dir):
             for xsd_file in os.listdir(xsd_dir):
                 if xsd_file.endswith(".xsd"):
@@ -25,12 +24,9 @@ def pack_scorm(
                     with open(xsd_path, "rb") as f:
                         zf.writestr(xsd_file, f.read())
 
-        # JS файлы в папку js/   ← этого блока у тебя не было
         if os.path.isdir(js_dir):
             for js_file in ["SCORM_API_wrapper.js", "scorm_12_libs.js"]:
                 js_path = os.path.join(js_dir, js_file)
                 if os.path.exists(js_path):
                     with open(js_path, "rb") as f:
                         zf.writestr(f"js/{js_file}", f.read())
-                        
-                        

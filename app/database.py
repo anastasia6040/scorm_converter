@@ -14,8 +14,8 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Связь: один пользователь — много конвертаций
-    conversions = db.relationship("Conversion", back_populates="user", lazy=True)
+    conversions = db.relationship(
+        "Conversion", back_populates="user", lazy=True)
 
     def __repr__(self):
         return f"<User {self.username}>"
@@ -32,19 +32,20 @@ class Conversion(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     output_filename = db.Column(db.String(255), nullable=True)
 
-    # Внешний ключ на пользователя
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     user = db.relationship("User", back_populates="conversions")
 
     def __repr__(self):
         return f"<Conversion {self.original_filename} [{self.status}]>"
-    
+
+
 class CourseMetadata(db.Model):
     __tablename__ = "course_metadata"
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    conversion_id = db.Column(db.Integer, db.ForeignKey("conversions.id"), nullable=False)
+    conversion_id = db.Column(db.Integer, db.ForeignKey(
+        "conversions.id"), nullable=False)
 
     title = db.Column(db.String(255), nullable=True)
     description = db.Column(db.Text, nullable=True)
@@ -55,4 +56,5 @@ class CourseMetadata(db.Model):
     keywords = db.Column(db.String(500), nullable=True)
 
     user = db.relationship("User", backref="metadata_entries")
-    conversion = db.relationship("Conversion", backref="metadata", uselist=False)
+    conversion = db.relationship(
+        "Conversion", backref="metadata", uselist=False)

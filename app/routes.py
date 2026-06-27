@@ -54,19 +54,15 @@ def convert():
         flash(f"Ошибка при чтении файла: {e}")
         return redirect(url_for("main.index"))
 
-    # Сохраняем промежуточные данные в сессию
-    # (parsed нельзя положить в сессию напрямую — сериализуем нужное)
     session["session_id"] = session_id
     session["original_filename"] = file.filename
     session["document_title"] = parsed.title
 
-    # Генерируем HTML и сохраняем на диск — он понадобится на следующем шаге
     html = generate_html(parsed, TEMPLATES_DIR)
     html_path = os.path.join(OUTPUT_FOLDER, f"{session_id}.html")
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    # Сохраняем список изображений и сами байты
     images_meta = {}
     for filename, data in parsed.images.items():
         img_path = os.path.join(OUTPUT_FOLDER, f"{session_id}_{filename}")
@@ -75,7 +71,6 @@ def convert():
         images_meta[filename] = img_path
     session["images_meta"] = images_meta
 
-    # Показываем форму метаданных, подставив title как подсказку
     return render_template("metadata.html", suggested_title=parsed.title)
 
 
@@ -87,7 +82,6 @@ def finalize():
         flash("Сессия истекла, загрузите файл заново")
         return redirect(url_for("main.index"))
 
-    # Читаем метаданные из формы — всё необязательно
     title = request.form.get("title", "").strip() or session.get(
         "document_title", "Без названия")
     description = request.form.get("description", "").strip() or None
@@ -97,14 +91,12 @@ def finalize():
     version = request.form.get("version", "1.0").strip() or "1.0"
     keywords = request.form.get("keywords", "").strip() or None
 
-    # Читаем сохранённые данные
     html_path = os.path.join(OUTPUT_FOLDER, f"{session_id}.html")
     images_meta = session.get("images_meta", {})
 
     with open(html_path, "r", encoding="utf-8") as f:
         html = f.read()
 
-    # Восстанавливаем изображения
     images = {}
     for filename, img_path in images_meta.items():
         with open(img_path, "rb") as f:
@@ -128,7 +120,6 @@ def finalize():
         pack_scorm(html, manifest, images, output_path,
                    xsd_dir=XSD_DIR, js_dir=JS_DIR)
 
-        # Сохраняем конвертацию в БД
         conversion = Conversion(
             original_filename=session.get("original_filename", ""),
             document_title=title,
@@ -137,9 +128,8 @@ def finalize():
             output_filename=output_filename,
         )
         db.session.add(conversion)
-        db.session.flush()  # чтобы получить conversion.id до commit
+        db.session.flush()
 
-        # Сохраняем метаданные в БД
         meta = CourseMetadata(
             user_id=current_user.id,
             conversion_id=conversion.id,
@@ -159,7 +149,6 @@ def finalize():
         flash(f"Ошибка при конвертации: {e}")
         return redirect(url_for("main.index"))
 
-    # Чистим сессию
     session.pop("session_id", None)
     session.pop("document_title", None)
     session.pop("original_filename", None)
@@ -186,7 +175,7 @@ def history():
 def download_history(conversion_id):
     conversion = Conversion.query.filter_by(
         id=conversion_id,
-        user_id=current_user.id    # защита: только свои файлы
+        user_id=current_user.id
     ).first()
 
     if not conversion or not conversion.output_filename:
@@ -199,7 +188,8 @@ def download_history(conversion_id):
         flash("Файл был удалён с сервера")
         return redirect(url_for("main.history"))
 
-    download_name = safe_download_filename(conversion.document_title or "scorm")
+    download_name = safe_download_filename(
+        conversion.document_title or "scorm")
 
     return send_file(
         file_path,
@@ -341,7 +331,6 @@ def preview(conversion_id):
     with open(html_path, "r", encoding="utf-8") as f:
         html = f.read()
 
-    # Заменяем относительные пути к картинкам на абсолютные
     html = html.replace(
         'src="images/',
         f'src="/course-image/{conversion_id}/'
@@ -372,12 +361,10 @@ def delete_conversion(conversion_id):
             if os.path.exists(path):
                 os.remove(path)
 
-        # Удаляем изображения
         for f in os.listdir(OUTPUT_FOLDER):
             if f.startswith(session_id + "_"):
                 os.remove(os.path.join(OUTPUT_FOLDER, f))
 
-    # Удаляем из БД
     if conversion.metadata:
         for meta in conversion.metadata:
             db.session.delete(meta)
@@ -486,4 +473,3 @@ def course_image(conversion_id, filename):
         return "", 404
 
     return send_file(img_path)
-

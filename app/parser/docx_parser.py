@@ -19,7 +19,7 @@ ALIGNMENT_MAP = {
 
 HIGHLIGHT_COLOR_MAP = {
     "YELLOW": "#FFFF99",
-    "BRIGHT_GREEN": "#CCFFCC",   # ← было #00FF00, стало светло-зелёным
+    "BRIGHT_GREEN": "#CCFFCC",
     "TURQUOISE": "#CCFFFF",
     "PINK": "#FFB6C1",
     "RED": "#FF9999",
@@ -33,10 +33,7 @@ HIGHLIGHT_COLOR_MAP = {
     "GRAY_25": "#C0C0C0",
 }
 
-# numFmt-значения OOXML, которые считаем "нумерованными" (не маркерами).
-# Полный список форматов нумерации: bullet, decimal, decimalZero, upperRoman,
-# lowerRoman, upperLetter, lowerLetter, ordinal, cardinalText, ordinalText, none, ...
-# Всё, что не "bullet"/"none", в учебных документах почти всегда нумерованный список.
+
 ORDERED_NUM_FORMATS = {
     "decimal", "decimalZero", "upperRoman", "lowerRoman",
     "upperLetter", "lowerLetter", "ordinal", "ordinalText", "cardinalText",
@@ -64,7 +61,6 @@ def _build_numfmt_map(doc) -> dict[str, str]:
 
     root = numbering_part.element
 
-    # 1) numId -> abstractNumId
     numid_to_abstract: dict[str, str] = {}
     for num_el in root.findall(qn("w:num")):
         num_id = num_el.get(qn("w:numId"))
@@ -73,7 +69,6 @@ def _build_numfmt_map(doc) -> dict[str, str]:
             abstract_id = abstract_el.get(qn("w:val"))
             numid_to_abstract[num_id] = abstract_id
 
-    # 2) abstractNumId -> numFmt (на уровне ilvl=0)
     abstract_to_fmt: dict[str, str] = {}
     for abs_el in root.findall(qn("w:abstractNum")):
         abs_id = abs_el.get(qn("w:abstractNumId"))
@@ -87,7 +82,6 @@ def _build_numfmt_map(doc) -> dict[str, str]:
                     abstract_to_fmt[abs_id] = fmt_el.get(qn("w:val"))
                 break
 
-    # 3) Собираем итоговую карту numId -> numFmt
     for num_id, abs_id in numid_to_abstract.items():
         fmt = abstract_to_fmt.get(abs_id)
         if fmt:
@@ -116,15 +110,12 @@ def _parse_runs(para) -> list[RunSegment]:
     for child in para._p:
         tag = child.tag.split("}")[-1]
 
-        # Обычный run
         if tag == "r":
             segment = _parse_single_run(child, link=None)
             if segment:
                 segments.append(segment)
 
-        # Гиперссылка — внутри могут быть несколько runs
         elif tag == "hyperlink":
-            # Получаем URL из атрибута r:id
             r_id = child.get(qn("r:id"))
             url = None
             try:
@@ -143,14 +134,12 @@ def _parse_runs(para) -> list[RunSegment]:
 
 def _parse_single_run(run_el, link: str | None) -> RunSegment | None:
     """Парсит один XML элемент w:r в RunSegment."""
-    # Текст run — в w:t
     t_el = run_el.find(qn("w:t"))
     if t_el is None or not t_el.text:
         return None
 
     text = t_el.text
 
-    # Свойства — в w:rPr
     rpr = run_el.find(qn("w:rPr"))
 
     bold = rpr is not None and rpr.find(qn("w:b")) is not None
@@ -210,29 +199,12 @@ def _has_image(para) -> bool:
 
 
 def _is_list_item(para) -> bool:
-    """
-    Определяет, является ли параграф элементом списка.
-    Раньше проверялось только имя стиля ("List" in style.name), но это
-    срабатывает и для bullet-, и для number-списков одинаково — стиль
-    у обоих называется "List Paragraph". Дополнительно проверяем наличие
-    реальной numPr-привязки (w:numPr), что надёжнее.
-    """
     if "List" in para.style.name:
         return True
     return _get_num_id(para) is not None
 
 
 def _is_ordered_list(para, numfmt_by_numid: dict[str, str]) -> bool:
-    """
-    Определяет, нумерованный ли список (1.,2.,3. / a.,b. / i.,ii. ...)
-    или маркированный (•, -, ▪ ...).
-
-    Раньше проверялось "Number" in style.name — это никогда не срабатывало,
-    так как у Word'а стиль абзаца для ЛЮБОГО списка называется "List Paragraph"
-    независимо от того, маркеры там или цифры. Реальное различие хранится
-    в word/numbering.xml: каждому numId соответствует numFmt уровня 0
-    ("bullet" для маркеров, "decimal"/"upperRoman"/... для нумерации).
-    """
     num_id = _get_num_id(para)
     if num_id is None:
         return False
@@ -243,7 +215,6 @@ def _is_ordered_list(para, numfmt_by_numid: dict[str, str]) -> bool:
 
 
 def _parse_paragraph(para, doc, result, image_counter, used_image_rids, numfmt_by_numid):
-    """Обрабатывает один параграф и добавляет элемент в result. Возвращает обновлённый image_counter."""
     style = para.style.name
     text = para.text.strip()
 
@@ -297,7 +268,6 @@ def _parse_paragraph(para, doc, result, image_counter, used_image_rids, numfmt_b
 
 
 def _parse_table(docx_table) -> Table:
-    """Обрабатывает одну таблицу и возвращает Table."""
     parsed_table = Table()
     for row in docx_table.rows:
         parsed_row = TableRow()
@@ -313,15 +283,10 @@ def parse_docx(file_path: str) -> ParsedDocument:
     image_counter = 1
     used_image_rids = set()
 
-    # Карта numId -> numFmt, нужна, чтобы отличить нумерованные списки
-    # от маркированных (у обоих стиль абзаца "List Paragraph").
     numfmt_by_numid = _build_numfmt_map(doc)
 
-    # Строим словарь: XML элемент → объект параграфа
-    # чтобы не создавать DocxParagraph вручную
     para_map = {p._element: p for p in doc.paragraphs}
 
-    # Строим словарь: XML элемент → объект таблицы
     table_map = {t._element: t for t in doc.tables}
 
     for child in doc.element.body:
@@ -340,7 +305,6 @@ def parse_docx(file_path: str) -> ParsedDocument:
     if not result.title:
         result.title = "Без названия"
 
-    # Группируем элементы по разделам (по H1)
     sections = []
     current_section = None
 
@@ -349,7 +313,6 @@ def parse_docx(file_path: str) -> ParsedDocument:
             current_section = Section(title=element.text)
             sections.append(current_section)
         elif current_section is None:
-            # Элементы до первого H1 — создаём раздел без названия
             current_section = Section(title=result.title)
             sections.append(current_section)
             current_section.elements.append(element)
